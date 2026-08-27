@@ -17,13 +17,23 @@ type PhaseTimerProps = {
   onStop: (elapsedSeconds: number) => void;
 };
 
-/** Cílový tlak fáze jako text: "6–9 bar", "3 bar", "bez tlaku". */
-export function formatPhasePressure(phase: TimerPhase): string {
+/**
+ * Cílový tlak fáze jako text: "6–9 bar", "3 bar", "bez tlaku".
+ * Vrací null pro fáze bez tlaku vůbec (filtr) — tam se sloupec s tlakem
+ * jen vynechá, místo aby se ukazovala prázdná pomlčka.
+ */
+export function formatPhasePressure(phase: TimerPhase): string | null {
   const { targetBarMin: min, targetBarMax: max } = phase;
-  if (min === null && max === null) return "—";
+  if (min === null && max === null) return null;
   if (min === 0 && max === 0) return "bez tlaku";
   if (min !== null && max !== null && min !== max) return `${min}–${max} bar`;
   return `${max ?? min} bar`;
+}
+
+/** Popis fáze pro seznam: tlak a délka, nebo jen délka u filtru. */
+function describePhase(phase: TimerPhase): string {
+  const pressure = formatPhasePressure(phase);
+  return pressure ? `${pressure} · ${phase.durationSeconds} s` : `${phase.durationSeconds} s`;
 }
 
 /**
@@ -99,7 +109,8 @@ export function PhaseTimer({ phases, onStop }: PhaseTimerProps) {
           <div className="text-sm">
             <p className="font-medium text-amber-300">{current.label}</p>
             <p className="text-stone-400">
-              {formatPhasePressure(current)} · {phaseElapsed}/{current.durationSeconds} s
+              {formatPhasePressure(current) && `${formatPhasePressure(current)} · `}
+              {phaseElapsed}/{current.durationSeconds} s
             </p>
           </div>
         )}
@@ -135,7 +146,7 @@ export function PhaseTimer({ phases, onStop }: PhaseTimerProps) {
             >
               <span>{phase.label}</span>
               <span className="tabular-nums">
-                {formatPhasePressure(phase)} · {phase.durationSeconds} s
+                {describePhase(phase)}
               </span>
             </li>
           );

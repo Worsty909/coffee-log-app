@@ -6,7 +6,7 @@ import { createRecipe } from "@/lib/actions/recipes";
 import { RatingInput } from "@/components/beans/RatingInput";
 import { NumberField } from "@/components/ui/NumberField";
 import { applyBrewEdit, changeDerivedField, type BrewField, type BrewValues } from "@/lib/brew-math";
-import { durationToInput } from "@/lib/format";
+import { durationToInput, parseDuration } from "@/lib/format";
 import { formatGrind, shiftGrind, type GrindSetting } from "@/lib/grind";
 import { RatioCalculator } from "./RatioCalculator";
 import { GrindInput } from "./GrindInput";
@@ -56,11 +56,25 @@ type BrewFormProps = {
   prefill: BrewFormPrefill;
 };
 
-// Filtrová příprava nemá tlakové fáze; časovač u ní jede jako jednoduché
-// stopky s jednou "fází" na celou dobu.
-const FILTER_FALLBACK_PHASES: TimerPhase[] = [
-  { label: "Extrakce", targetBarMin: null, targetBarMax: null, durationSeconds: 180, note: null },
-];
+/**
+ * Filtrová příprava nemá tlakové fáze — časovač u ní jen odděluje bloom
+ * od zbytku extrakce podle časů, které si zadáš.
+ */
+function buildFilterPhases(bloomText: string, totalText: string): TimerPhase[] {
+  const total = parseDuration(totalText) ?? 0;
+  const bloom = parseDuration(bloomText) ?? 0;
+
+  if (bloom > 0 && bloom < total) {
+    return [
+      { label: "Bloom", targetBarMin: null, targetBarMax: null, durationSeconds: bloom, note: "Zalij dvojnásobek dávky a nech odplynit." },
+      { label: "Extrakce", targetBarMin: null, targetBarMax: null, durationSeconds: total - bloom, note: null },
+    ];
+  }
+
+  return [
+    { label: "Extrakce", targetBarMin: null, targetBarMax: null, durationSeconds: total, note: null },
+  ];
+}
 
 export function BrewForm({
   methods,
@@ -104,9 +118,13 @@ export function BrewForm({
   const [waterTemp, setWaterTemp] = useState(
     String(prefill?.waterTempC ?? profile?.waterTempC ?? ""),
   );
-  // Skutečný čas držíme jako text ("32" i "2:45") — na sekundy ho
-  // převede až validace při ukládání (viz lib/validation/recipe.ts).
+  // Časy držíme jako text ("32" i "2:45") — na sekundy je převede až
+  // validace při ukládání (viz lib/validation/recipe.ts).
   const [actualTime, setActualTime] = useState("");
+  // U filtru si cílový čas a bloom zadáváš sám; u espressa je oboje
+  // dané zvoleným tlakovým profilem.
+  const [filterTargetTime, setFilterTargetTime] = useState("2:30");
+  const [filterBloomTime, setFilterBloomTime] = useState("30");
 
   // Profil doporučuje posun mletí oproti tvému běžnému espresso
   // nastavení — turbo shot výrazně hrubší, klasika beze změny.
@@ -150,7 +168,12 @@ export function BrewForm({
     });
   }
 
-  const timerPhases = isEspresso && profile ? profile.phases : FILTER_FALLBACK_PHASES;
+  // Fáze pro časovač: u espressa přímo z profilu, u filtru se poskládají
+  // ze zadaného bloomu a cílového času.
+  const timerPhases: TimerPhase[] =
+    isEspresso && profile ? profile.phases : buildFilterPhases(filterBloomTime, filterTargetTime);
+
+  const targetSeconds = timerPhases.reduce((sum, phase) => sum + phase.durationSeconds, 0);
 
   return (
     <form action={formAction} className="space-y-5">
@@ -288,7 +311,7 @@ export function BrewForm({
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className={`grid gap-4 ${isEspresso ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
         <NumberField
           id="waterTempC"
           name="waterTempC"
@@ -297,17 +320,46 @@ export function BrewForm({
           onChange={setWaterTemp}
           suffix="°C"
         />
-        <NumberField
-          id="targetTotalSeconds"
-          name="targetTotalSeconds"
-          label="Cílový čas"
-          value={durationToInput(
-            timerPhases.reduce((sum, phase) => sum + phase.durationSeconds, 0),
-          )}
-          readOnly
-          hint="Součet fází profilu"
-        />
+        {isEspresso ? (
+          <NumberField
+            id="targetTotalSeconds"
+            name="targetTotalSeconds"
+            label="Cílový čas"
+            value={durationToInput(targetSeconds)}
+            readOnly
+            hint="Součet fází profilu"
+          />
+        ) : (
+          <>
+            <NumberField
+              id="targetTotalSeconds"
+              name="targetTotalSeconds"
+              label="Cílový čas"
+              value={filterTargetTime}
+              onChange={setFilterTargetTime}
+              placeholder="např. 2:30"
+            />
+            <NumberField
+              id="bloomSeconds"
+              name="bloomSeconds"
+              label="Bloom"
+              value={filterBloomTime}
+              onChange={setFilterBloomTime}
+              suffix="s"
+              hint="0 = bez bloomu"
+            />
+          </>
+        )}
       </div>
+
+      {/* U espressa je bloom součástí fází profilu — uložíme délku první fáze. */}
+      {isEspresso && (
+        <input
+          type="hidden"
+          name="bloomSeconds"
+          value={timerPhases[0]?.durationSeconds ?? ""}
+        />
+      )}
 
       <PhaseTimer phases={timerPhases} onStop={(seconds) => setActualTime(durationToInput(seconds))} />
 
@@ -337,8 +389,10 @@ export function BrewForm({
       </div>
 
       <p className="text-xs text-stone-600">
-        Uloží se s vybavením: {settings.brewerName} · {settings.grinderName} · mletí{" "}
-        {formatGrind(grind)}
+        Uloží se s vybavením:{" "}
+        {/* Kávovar dává smysl zmiňovat jen u espressa — filtr se na páce nedělá. */}
+        {isEspresso && `${settings.brewerName} · `}
+        {settings.grinderName} · mletí {formatGrind(grind)}
       </p>
 
       {state.error && <p className="text-sm text-red-400">{state.error}</p>}
