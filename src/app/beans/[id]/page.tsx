@@ -5,6 +5,8 @@ import { processLabels } from "@/lib/validation/bean";
 import { deleteBean } from "@/lib/actions/beans";
 import { DeleteBeanButton } from "@/components/beans/DeleteBeanButton";
 import { RatingDisplay } from "@/components/beans/RatingDisplay";
+import { RecipeHistoryList } from "@/components/beans/RecipeHistoryList";
+import { getDecliningRatingRecommendation } from "@/lib/recommendation";
 
 export default async function BeanDetailPage({
   params,
@@ -17,6 +19,14 @@ export default async function BeanDetailPage({
   if (!bean) {
     notFound();
   }
+
+  const recipes = await prisma.recipe.findMany({
+    where: { beanId: id },
+    orderBy: { brewedAt: "desc" },
+    include: { method: { select: { name: true } } },
+  });
+
+  const recommendation = getDecliningRatingRecommendation(recipes);
 
   return (
     <div className="space-y-6">
@@ -73,6 +83,19 @@ export default async function BeanDetailPage({
           <p className="mt-1 whitespace-pre-wrap text-sm text-neutral-800">{bean.notes}</p>
         </div>
       )}
+
+      {recommendation && (
+        <p className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          💡 {recommendation}
+        </p>
+      )}
+
+      <div>
+        <h2 className="text-lg font-semibold text-neutral-900">Historie receptů</h2>
+        <div className="mt-3">
+          <RecipeHistoryList recipes={recipes} />
+        </div>
+      </div>
     </div>
   );
 }
