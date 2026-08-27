@@ -2,8 +2,8 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
-import { Process } from "@/generated/prisma/enums";
-import { processLabels } from "@/lib/validation/bean";
+import { Process, RoastLevel } from "@/generated/prisma/enums";
+import { processLabels, roastLevelLabels } from "@/lib/validation/bean";
 import type { BeanFormState } from "@/lib/actions/beans";
 import { RatingInput } from "./RatingInput";
 
@@ -15,6 +15,7 @@ export type BeanFormValues = {
   originCountry: string;
   region: string | null;
   process: Process;
+  roastLevel: RoastLevel | null;
   roastDate: Date | null;
   sweetness: number | null;
   acidity: number | null;
@@ -36,6 +37,7 @@ const emptyValues: BeanFormValues = {
   originCountry: "",
   region: null,
   process: Process.WASHED,
+  roastLevel: null,
   roastDate: null,
   sweetness: null,
   acidity: null,
@@ -50,6 +52,9 @@ function toDateInputValue(date: Date | null): string {
   return date.toISOString().slice(0, 10);
 }
 
+const inputClass =
+  "mt-1 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 outline-none focus:border-amber-600";
+
 export function BeanForm({ action, initialValues, submitLabel }: BeanFormProps) {
   const values = initialValues ?? emptyValues;
   const [state, formAction] = useActionState<BeanFormState, FormData>(action, { error: null });
@@ -63,18 +68,32 @@ export function BeanForm({ action, initialValues, submitLabel }: BeanFormProps) 
         <Field label="Region (nepovinné)" name="region" defaultValue={values.region ?? ""} />
 
         <div>
-          <label htmlFor="process" className="block text-sm font-medium text-neutral-700">
+          <label htmlFor="process" className="block text-sm font-medium text-stone-300">
             Zpracování
           </label>
-          <select
-            id="process"
-            name="process"
-            defaultValue={values.process}
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-          >
+          <select id="process" name="process" defaultValue={values.process} className={inputClass}>
             {Object.values(Process).map((process) => (
               <option key={process} value={process}>
                 {processLabels[process]}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="roastLevel" className="block text-sm font-medium text-stone-300">
+            Stupeň pražení
+          </label>
+          <select
+            id="roastLevel"
+            name="roastLevel"
+            defaultValue={values.roastLevel ?? ""}
+            className={inputClass}
+          >
+            <option value="">neuvedeno</option>
+            {Object.values(RoastLevel).map((level) => (
+              <option key={level} value={level}>
+                {roastLevelLabels[level]}
               </option>
             ))}
           </select>
@@ -96,7 +115,7 @@ export function BeanForm({ action, initialValues, submitLabel }: BeanFormProps) 
       </div>
 
       <div>
-        <label htmlFor="notes" className="block text-sm font-medium text-neutral-700">
+        <label htmlFor="notes" className="block text-sm font-medium text-stone-300">
           Poznámky
         </label>
         <textarea
@@ -104,12 +123,12 @@ export function BeanForm({ action, initialValues, submitLabel }: BeanFormProps) 
           name="notes"
           rows={4}
           defaultValue={values.notes ?? ""}
-          className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+          className={inputClass}
         />
       </div>
 
       <div>
-        <label htmlFor="photo" className="block text-sm font-medium text-neutral-700">
+        <label htmlFor="photo" className="block text-sm font-medium text-stone-300">
           Fotka štítku (nepovinné)
         </label>
         {values.photoUrl && (
@@ -117,7 +136,7 @@ export function BeanForm({ action, initialValues, submitLabel }: BeanFormProps) 
           <img
             src={values.photoUrl}
             alt="Aktuální fotka štítku"
-            className="mt-2 h-32 w-32 rounded-md object-cover"
+            className="mt-2 h-28 w-28 rounded-lg object-cover"
           />
         )}
         <input
@@ -125,11 +144,11 @@ export function BeanForm({ action, initialValues, submitLabel }: BeanFormProps) 
           name="photo"
           type="file"
           accept="image/jpeg,image/png,image/webp"
-          className="mt-1 block text-sm"
+          className="mt-1 block w-full text-sm text-stone-400 file:mr-3 file:rounded-lg file:border-0 file:bg-stone-800 file:px-3 file:py-1.5 file:text-sm file:text-stone-200"
         />
       </div>
 
-      {state.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {state.error && <p className="text-sm text-red-400">{state.error}</p>}
 
       <SubmitButton label={submitLabel} />
     </form>
@@ -142,7 +161,7 @@ function SubmitButton({ label }: { label: string }) {
     <button
       type="submit"
       disabled={pending}
-      className="rounded-md bg-amber-800 px-4 py-2 text-sm font-medium text-white hover:bg-amber-900 disabled:opacity-50"
+      className="rounded-lg bg-amber-700 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600 disabled:opacity-50"
     >
       {pending ? "Ukládám…" : label}
     </button>
@@ -164,7 +183,7 @@ function Field({
 }) {
   return (
     <div>
-      <label htmlFor={name} className="block text-sm font-medium text-neutral-700">
+      <label htmlFor={name} className="block text-sm font-medium text-stone-300">
         {label}
       </label>
       <input
@@ -173,7 +192,7 @@ function Field({
         type={type}
         required={required}
         defaultValue={defaultValue}
-        className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+        className={inputClass}
       />
     </div>
   );

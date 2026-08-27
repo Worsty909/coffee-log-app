@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { BeanForm } from "@/components/beans/BeanForm";
 import { updateBean } from "@/lib/actions/beans";
 
+export const dynamic = "force-dynamic";
+
 export default async function EditBeanPage({
   params,
 }: {
@@ -17,7 +19,7 @@ export default async function EditBeanPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-neutral-900">
+      <h1 className="text-2xl font-semibold text-stone-100">
         Upravit zrnko — {bean.coffeeName}
       </h1>
       <BeanForm action={updateBean.bind(null, bean.id)} initialValues={bean} submitLabel="Uložit změny" />

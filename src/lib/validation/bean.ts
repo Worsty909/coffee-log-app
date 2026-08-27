@@ -3,13 +3,10 @@
 // klientovi. Číselné hodnocení chuti je omezené na 1–5, jak žádá zadání
 // ("číselné škály, ne volný text").
 import { z } from "zod";
-import { Process } from "@/generated/prisma/enums";
+import { Process, RoastLevel } from "@/generated/prisma/enums";
+import { emptyToNull } from "./number";
 
 const ratingSchema = z.coerce.number().int().min(1).max(5).nullable();
-
-// Prázdný string z formuláře převedeme na null, ať nemusí formulář sám řešit,
-// jestli pole poslat nebo ne.
-const emptyToNull = (value: unknown) => (value === "" ? null : value);
 
 export const beanInputSchema = z.object({
   roaster: z.string().trim().min(1, "Zadej pražírnu"),
@@ -17,6 +14,7 @@ export const beanInputSchema = z.object({
   originCountry: z.string().trim().min(1, "Zadej zemi původu"),
   region: z.preprocess(emptyToNull, z.string().trim().nullable()),
   process: z.enum(Process),
+  roastLevel: z.preprocess(emptyToNull, z.enum(RoastLevel).nullable()),
   roastDate: z.preprocess(emptyToNull, z.coerce.date().nullable()),
   sweetness: z.preprocess(emptyToNull, ratingSchema),
   acidity: z.preprocess(emptyToNull, ratingSchema),
@@ -34,4 +32,14 @@ export const processLabels: Record<Process, string> = {
   NATURAL: "Natural (přírodní)",
   HONEY: "Honey",
   OTHER: "Jiné",
+};
+
+// Stupeň pražení rozhoduje o tom, který tlakový profil dává smysl —
+// světlá pražení těží z bloomingu a turbo shotů, tmavá z klasiky.
+export const roastLevelLabels: Record<RoastLevel, string> = {
+  LIGHT: "Světlé",
+  MEDIUM_LIGHT: "Středně světlé",
+  MEDIUM: "Střední",
+  MEDIUM_DARK: "Středně tmavé",
+  DARK: "Tmavé",
 };

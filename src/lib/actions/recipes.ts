@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { recipeInputSchema } from "@/lib/validation/recipe";
+import { getSettings } from "@/lib/settings";
 
 export type RecipeFormState = {
   error: string | null;
@@ -16,7 +17,18 @@ export async function createRecipe(
   let beanId: string;
   try {
     const data = recipeInputSchema.parse(Object.fromEntries(formData));
-    const recipe = await prisma.recipe.create({ data });
+
+    // K receptu si uložíme i to, čím se vařilo. Je to snapshot — když si
+    // za rok pořídíš jiný mlýnek, stará historie pořád dává smysl.
+    const settings = await getSettings();
+
+    const recipe = await prisma.recipe.create({
+      data: {
+        ...data,
+        grinderLabel: settings.grinderName,
+        brewerLabel: settings.brewerName,
+      },
+    });
     beanId = recipe.beanId;
   } catch (error) {
     return { error: describeError(error) };

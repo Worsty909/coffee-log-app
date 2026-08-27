@@ -15,19 +15,11 @@ export type BeanFormState = {
 };
 
 function readBeanFormData(formData: FormData) {
-  return beanInputSchema.parse({
-    roaster: formData.get("roaster"),
-    coffeeName: formData.get("coffeeName"),
-    originCountry: formData.get("originCountry"),
-    region: formData.get("region"),
-    process: formData.get("process"),
-    roastDate: formData.get("roastDate"),
-    sweetness: formData.get("sweetness"),
-    acidity: formData.get("acidity"),
-    body: formData.get("body"),
-    aftertaste: formData.get("aftertaste"),
-    notes: formData.get("notes"),
-  });
+  // Bereme celý formulář najednou místo vypisování jednotlivých polí —
+  // jinak se snadno stane, že se přidá pole do schématu i formuláře, ale
+  // zapomene se sem, a hodnota se pak tiše zahazuje. Zod si z toho vezme
+  // jen to, co má ve schématu (včetně souboru s fotkou, který ignoruje).
+  return beanInputSchema.parse(Object.fromEntries(formData));
 }
 
 async function extractPhotoUrl(formData: FormData): Promise<string | undefined> {

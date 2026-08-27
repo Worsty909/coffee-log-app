@@ -32,7 +32,7 @@ export function RatioCalculator({
         </p>
       </div>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+      <div className="mt-3 grid grid-cols-3 gap-2 sm:gap-3">
         {FIELD_ORDER.map((field) => (
           <div key={field}>
             <NumberField

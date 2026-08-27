@@ -1,17 +1,26 @@
 @import "tailwindcss";
 
 /*
- * Appka má zatím jen jeden (světlý) vzhled — bez tohohle řádku prohlížeč
- * na zařízení s tmavým režimem sám přebarví nativní prvky (select,
- * dropdown nabídky, scrollbary) do tmavé palety, i když zbytek appky
- * zůstane světlý. Výsledkem byl nečitelný text v dropdownech (tmavý
- * text appky na tmavém pozadí prohlížeče). `color-scheme: light`
- * prohlížeči řekne, ať pro nativní prvky vždy použije světlou paletu.
+ * Appka má jeden vzhled — tmavý. `color-scheme: dark` řekne prohlížeči,
+ * ať i nativní prvky (select, dropdown nabídky, scrollbary, date picker)
+ * vykresluje tmavě, takže nikde nevznikne tmavý text na tmavém pozadí
+ * ani naopak.
  */
 :root {
-  color-scheme: light;
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
+
+  /* Základní plochy odspodu nahoru: pozadí stránky → karta → zvýrazněná plocha. */
+  --background: #1c1917; /* stone-900 */
+  --surface: #292524; /* stone-800 */
+  --border: #44403c; /* stone-700 */
+
+  --foreground: #f5f5f4; /* stone-100 — hlavní text */
+  --muted: #a8a29e; /* stone-400 — popisky */
+  --subtle: #78716c; /* stone-500 — nápovědy */
+
+  /* Akcent laděný do kávy. */
+  --accent: #d97706; /* amber-600 */
+  --accent-soft: #fbbf24; /* amber-400 — text na tmavém */
 }
 
 @theme inline {
@@ -24,5 +33,12 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+/*
+ * Čísla v kalkulačce a na časovači se při přepočtu mění za běhu —
+ * tabulkové číslice zajistí, že se text nehýbe do stran.
+ */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
