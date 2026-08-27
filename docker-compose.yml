@@ -1,0 +1,23 @@
+# Lokální PostgreSQL pro vývoj. Appka samotná (Next.js) v tomto Compose
+# souboru NENÍ — tu spouštíš normálně přes `npm run dev`, tenhle soubor
+# jen nahrazuje instalaci Postgresu na tvůj počítač.
+#
+# Spuštění:  docker compose up -d
+# Zastavení: docker compose down
+# Smazání dat: docker compose down -v
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: coffee
+      POSTGRES_PASSWORD: coffee
+      POSTGRES_DB: coffee_log
+    ports:
+      - "5432:5432"
+    volumes:
+      - coffee_log_db_data:/var/lib/postgresql/data
+
+volumes:
+  coffee_log_db_data:

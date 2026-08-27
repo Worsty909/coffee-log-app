@@ -1,0 +1,98 @@
+// Prisma schema — datový model aplikace Coffee Log & Brew Calculator.
+// Dokumentace: https://pris.ly/d/prisma-schema
+//
+// Appka je čistě osobní log bez přihlašování, takže tu nenajdeš žádnou
+// tabulku "User" — všechna data patří jedinému člověku, který appku hostuje.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Způsob zpracování kávových třešní na sušárně/pražírně.
+// "OTHER" pokrývá exotičtější metody (anaerobic, carbonic maceration, ...) —
+// konkrétní popis pak patří do volného pole `notes` u zrnka.
+enum Process {
+  WASHED
+  NATURAL
+  HONEY
+  OTHER
+}
+
+// Profil jedné dávky zrnkové kávy — základní "karta" v deníku.
+model Bean {
+  id            String   @id @default(cuid())
+  roaster       String // pražírna
+  coffeeName    String // název kávy tak, jak ji pražírna pojmenovala
+  originCountry String
+  region        String?
+  process       Process
+  roastDate     DateTime?
+
+  // Vlastní hodnocení chuti, škála 1–5 (5 = nejvíc). Nepovinné, dokud
+  // kávu neochutnáš. Záměrně číselné škály místo volného textu, aby šly
+  // později srovnávat a řadit.
+  sweetness  Int?
+  acidity    Int?
+  body       Int?
+  aftertaste Int?
+
+  notes    String? // volné poznámky k zrnku
+  photoUrl String? // cesta/URL k fotce štítku (bez OCR, jen uložení obrázku)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  recipes Recipe[]
+
+  @@index([roaster])
+}
+
+// Metoda přípravy (espresso, V60, moka, aeropress, french press, + vlastní).
+// `defaultRatio` je jmenovatel poměru káva:voda, např. 16 znamená 1:16.
+model BrewMethod {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  defaultRatio Float
+  isCustom     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  recipes Recipe[]
+}
+
+// Konkrétní recept/pokus přípravy daného zrnka danou metodou.
+// Jedno zrnko má typicky víc receptů v čase, jak se ladí postup.
+model Recipe {
+  id     String @id @default(cuid())
+  bean   Bean   @relation(fields: [beanId], references: [id], onDelete: Cascade)
+  beanId String
+
+  method   BrewMethod @relation(fields: [methodId], references: [id])
+  methodId String
+
+  ratio       Float // použitý poměr káva:voda (jmenovatel, může se lišit od defaultu metody)
+  coffeeGrams Float
+  waterGrams  Float
+
+  // Hrubost mletí je záměrně text, ne pevná číselná škála — mlýnky mají
+  // různé stupnice (kliky, čísla, popisky), takže si sem napíšeš cokoliv
+  // dává smysl pro tvůj mlýnek, např. "Comandante 25 kliků".
+  grindSetting String?
+  waterTempC   Float?
+
+  bloomSeconds       Int? // délka bloom fáze v appce
+  targetTotalSeconds Int? // plánovaná celková doba extrakce
+  actualTotalSeconds Int? // skutečně naměřená doba (z časovače nebo ručně)
+
+  rating Int? // celkové hodnocení výsledného šálku, škála 1–5
+  notes  String?
+
+  brewedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([beanId, brewedAt])
+}

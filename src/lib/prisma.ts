@@ -1,0 +1,25 @@
+// Sdílená instance Prisma klienta pro celou appku.
+//
+// Next.js za vývoje znovu načítá moduly při každé změně souboru (hot
+// reload), takže bez tohohle triku bychom si při každé úpravě kódu
+// otevřeli nové připojení k databázi a rychle bychom vyčerpali limit
+// souběžných spojení. Trik: instanci si schováme do `globalThis`, která
+// hot reload přežije, a v produkci (kde se modul načte jen jednou) se
+// chová úplně stejně jako obyčejný singleton.
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "@/generated/prisma/client";
+
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
+
+function createPrismaClient() {
+  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+  return new PrismaClient({ adapter });
+}
+
+export const prisma = globalForPrisma.prisma ?? createPrismaClient();
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+}
