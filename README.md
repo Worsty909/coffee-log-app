@@ -101,6 +101,13 @@ metody přípravy, tlakové profily pro Flair 58 a výchozí nastavení
 vybavení. Seed je bezpečné spustit opakovaně — vlastní metody a profily
 nechá být, přepíše jen ty výchozí.
 
+> **Pozn. k nasazené appce:** na Vercelu se seed nespouští (build dělá
+> jen `prisma migrate deploy`). Vestavěné metody a tlakové profily se
+> tam proto zakládají přímo migrací
+> `20260827211500_backfill_espresso_defaults`, aby se produkce
+> spravila samotným deployem. Seed zůstává pro čerstvé lokální
+> databáze.
+
 ### 5. Spuštění appky
 
 ```bash
