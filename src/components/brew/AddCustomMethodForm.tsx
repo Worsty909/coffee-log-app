@@ -43,14 +43,18 @@ export function AddCustomMethodForm() {
         <label htmlFor="newMethodRatio" className="block text-xs font-medium text-neutral-700">
           Výchozí poměr (1:N)
         </label>
+        {/* Bez `step` (resp. se `step="any"`) jde zadat libovolné
+            desetinné číslo — např. 2,777 pro 18 g → 50 g. Dřív tu byl
+            krok 0,5, který jemnější poměry odmítal. */}
         <input
           id="newMethodRatio"
           name="defaultRatio"
-          type="number"
-          step="0.5"
-          min="1"
+          type="text"
+          inputMode="decimal"
+          autoComplete="off"
+          placeholder="např. 2,777"
           required
-          className="mt-1 w-20 rounded-md border border-neutral-300 px-2 py-1 text-sm"
+          className="mt-1 w-28 rounded-md border border-neutral-300 px-2 py-1 text-sm"
         />
       </div>
       <button

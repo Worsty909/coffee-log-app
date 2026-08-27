@@ -3,9 +3,7 @@
 // pole "počet sekund") a tady se sečtou na celkový počet sekund, jak to
 // čeká databáze. Nulový čas (0 min 0 s) znamená "nevyplněno".
 import { z } from "zod";
-
-const emptyToNull = (value: unknown) => (value === "" ? null : value);
-const emptyToZero = (value: unknown) => (value === "" || value === null || value === undefined ? 0 : value);
+import { commaToDot, decimalOrNull, emptyToNull, emptyToZero } from "./number";
 
 function minutesSecondsToTotalOrNull(minutes: number, seconds: number): number | null {
   const total = minutes * 60 + seconds;
@@ -16,11 +14,17 @@ export const recipeInputSchema = z
   .object({
     beanId: z.string().min(1, "Vyber zrnko"),
     methodId: z.string().min(1, "Vyber metodu přípravy"),
-    ratio: z.coerce.number().positive("Poměr musí být kladné číslo"),
-    coffeeGrams: z.coerce.number().positive("Gramáž kávy musí být kladné číslo"),
-    waterGrams: z.coerce.number().positive("Množství vody musí být kladné číslo"),
+    ratio: z.preprocess(commaToDot, z.coerce.number().positive("Poměr musí být kladné číslo")),
+    coffeeGrams: z.preprocess(
+      commaToDot,
+      z.coerce.number().positive("Gramáž kávy musí být kladné číslo"),
+    ),
+    waterGrams: z.preprocess(
+      commaToDot,
+      z.coerce.number().positive("Množství vody musí být kladné číslo"),
+    ),
     grindSetting: z.preprocess(emptyToNull, z.string().trim().nullable()),
-    waterTempC: z.preprocess(emptyToNull, z.coerce.number().nullable()),
+    waterTempC: z.preprocess(decimalOrNull, z.coerce.number().nullable()),
     bloomSeconds: z.preprocess(emptyToNull, z.coerce.number().int().nonnegative().nullable()),
     targetTotalMinutes: z.preprocess(emptyToZero, z.coerce.number().int().nonnegative()),
     targetTotalSecondsPart: z.preprocess(emptyToZero, z.coerce.number().int().min(0).max(59)),
@@ -48,5 +52,9 @@ export type RecipeInput = z.infer<typeof recipeInputSchema>;
 
 export const customMethodSchema = z.object({
   name: z.string().trim().min(1, "Zadej název metody"),
-  defaultRatio: z.coerce.number().positive("Poměr musí být kladné číslo"),
+  // Bez omezení na krok — poměr může být libovolně jemný (2,777).
+  defaultRatio: z.preprocess(
+    commaToDot,
+    z.coerce.number().positive("Poměr musí být kladné číslo"),
+  ),
 });
