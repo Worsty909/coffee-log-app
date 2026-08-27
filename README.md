@@ -131,21 +131,34 @@ docker-compose.yml     # lokální PostgreSQL pro vývoj
 ### 1. Databáze na Neon
 
 1. Založ si účet na [neon.tech](https://neon.tech) (free tier stačí) a nový projekt.
-2. V Neon dashboardu zkopíruj **pooled connection string** (pro serverless prostředí jako Vercel je potřeba ten "pooled", ne přímý).
+2. V Neon dashboardu si zkopíruj **dvě** connection stringy (v UI je přepínáš
+   zaškrtávátkem/tlačítkem "Pooled connection"):
+   - **pooled** (obsahuje `-pooler` v hostname) — pro běh appky
+   - **přímou/direct** (bez `-pooler`) — jen pro migrace
+
+   Migrace (`prisma migrate deploy`) potřebují k databázi přímé spojení,
+   protože si při běhu drží tzv. advisory lock — přes connection pooler
+   (Neon "pooled"/PgBouncer) se ten lock spolehlivě nezíská a migrace
+   spadne na timeoutu. Appka samotná za běhu naopak chce tu poolovanou
+   variantu (lépe zvládá hodně krátkých souběžných spojení, typické pro
+   serverless).
 
 ### 2. Vytvoření tabulek na Neon
 
 Z vlastního počítače (appka tam nemusí běžet, stačí mít nainstalované závislosti):
 
 ```bash
-DATABASE_URL="<connection string z Neon>" npx prisma migrate deploy
-DATABASE_URL="<connection string z Neon>" npx prisma db seed
+DIRECT_URL="<přímá connection string z Neon>" npx prisma migrate deploy
+DATABASE_URL="<pooled connection string z Neon>" npx prisma db seed
 ```
 
 ### 3. Deploy na Vercel
 
 1. Na [vercel.com](https://vercel.com) založ nový projekt a propoj ho s tímhle GitHub repozitářem.
-2. V nastavení projektu (Environment Variables) přidej `DATABASE_URL` s connection stringem z Neon.
+2. V nastavení projektu (Environment Variables) přidej **obě** proměnné (pro
+   Production i Preview prostředí):
+   - `DATABASE_URL` = pooled connection string z Neonu
+   - `DIRECT_URL` = přímá connection string z Neonu
 3. V nastavení Build & Development Settings nastav **Build Command** na:
    ```
    npx prisma migrate deploy && next build

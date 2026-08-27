@@ -1,6 +1,15 @@
 @import "tailwindcss";
 
+/*
+ * Appka má zatím jen jeden (světlý) vzhled — bez tohohle řádku prohlížeč
+ * na zařízení s tmavým režimem sám přebarví nativní prvky (select,
+ * dropdown nabídky, scrollbary) do tmavé palety, i když zbytek appky
+ * zůstane světlý. Výsledkem byl nečitelný text v dropdownech (tmavý
+ * text appky na tmavém pozadí prohlížeče). `color-scheme: light`
+ * prohlížeči řekne, ať pro nativní prvky vždy použije světlou paletu.
+ */
 :root {
+  color-scheme: light;
   --background: #ffffff;
   --foreground: #171717;
 }
@@ -10,13 +19,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
