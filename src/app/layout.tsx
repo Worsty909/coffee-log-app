@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
+import { NavLinks } from "@/components/layout/NavLinks";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,12 +19,6 @@ export const metadata: Metadata = {
   description: "Osobní deník ochutnávek kávy a kalkulačka espressa.",
 };
 
-const NAV = [
-  { href: "/brew/new", label: "Připravit" },
-  { href: "/beans", label: "Zrnka" },
-  { href: "/settings", label: "Vybavení" },
-];
-
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
@@ -36,15 +31,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Link href="/" className="font-semibold text-amber-500">
               Coffee Log
             </Link>
-            {NAV.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="text-sm text-stone-400 transition hover:text-stone-100"
-              >
-                {item.label}
-              </Link>
-            ))}
+            <NavLinks />
           </nav>
         </header>
         <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6">{children}</main>
