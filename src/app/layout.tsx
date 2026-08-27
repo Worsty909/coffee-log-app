@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
+import { NavLinks } from "@/components/layout/NavLinks";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Coffee Log",
-  description: "Osobní deník ochutnávek kávy a kalkulačka poměrů/extrakce.",
+  description: "Osobní deník ochutnávek kávy a kalkulačka espressa.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -24,21 +25,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="cs"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-neutral-50 text-neutral-900">
-        <header className="border-b border-neutral-200 bg-white">
-          <nav className="mx-auto flex max-w-3xl items-center gap-6 px-4 py-3">
-            <Link href="/" className="font-semibold text-amber-900">
-              ☕ Coffee Log
+      <body className="flex min-h-full flex-col bg-stone-950 text-stone-100">
+        <header className="border-b border-stone-800 bg-stone-900/80 backdrop-blur">
+          <nav className="mx-auto flex max-w-2xl items-center gap-5 px-4 py-3">
+            <Link href="/" className="font-semibold text-amber-500">
+              Coffee Log
             </Link>
-            <Link href="/beans" className="text-sm text-neutral-600 hover:text-neutral-900">
-              Zrnka
-            </Link>
-            <Link href="/brew/new" className="text-sm text-neutral-600 hover:text-neutral-900">
-              Vařím
-            </Link>
+            <NavLinks />
           </nav>
         </header>
-        <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">{children}</main>
+        <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6">{children}</main>
       </body>
     </html>
   );

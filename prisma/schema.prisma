@@ -3,6 +3,9 @@
 //
 // Appka je čistě osobní log bez přihlašování, takže tu nenajdeš žádnou
 // tabulku "User" — všechna data patří jedinému člověku, který appku hostuje.
+//
+// Appka je stavěná primárně na espresso (Flair 58+ 2, mlýnek 1Zpresso
+// J-Ultra); filtrová příprava je vedlejší větev s jednodušším záznamem.
 
 generator client {
   provider = "prisma-client"
@@ -23,14 +26,33 @@ enum Process {
   OTHER
 }
 
+// Stupeň pražení. Rozhoduje o tom, který tlakový profil dává smysl
+// doporučit — světlá pražení těží z bloomingu a turbo shotů, tmavá
+// z klasického kratšího espressa.
+enum RoastLevel {
+  LIGHT
+  MEDIUM_LIGHT
+  MEDIUM
+  MEDIUM_DARK
+  DARK
+}
+
+// Rodina metody přípravy. Espresso má tlakové profily a fázový časovač,
+// filtr jen poměr a jednoduchý čas.
+enum MethodKind {
+  ESPRESSO
+  FILTER
+}
+
 // Profil jedné dávky zrnkové kávy — základní "karta" v deníku.
 model Bean {
-  id            String   @id @default(cuid())
+  id            String     @id @default(cuid())
   roaster       String // pražírna
   coffeeName    String // název kávy tak, jak ji pražírna pojmenovala
   originCountry String
   region        String?
   process       Process
+  roastLevel    RoastLevel?
   roastDate     DateTime?
 
   // Vlastní hodnocení chuti, škála 1–5 (5 = nejvíc). Nepovinné, dokud
@@ -52,16 +74,70 @@ model Bean {
   @@index([roaster])
 }
 
-// Metoda přípravy (espresso, V60, moka, aeropress, french press, + vlastní).
-// `defaultRatio` je jmenovatel poměru káva:voda, např. 16 znamená 1:16.
+// Metoda přípravy. `defaultRatio` je jmenovatel poměru dávka:výdej,
+// např. 2 znamená 1:2 (18 g → 36 g), 16 znamená 1:16 pro filtr.
 model BrewMethod {
-  id           String   @id @default(cuid())
-  name         String   @unique
+  id           String     @id @default(cuid())
+  name         String     @unique
+  kind         MethodKind @default(FILTER)
   defaultRatio Float
-  isCustom     Boolean  @default(false)
-  createdAt    DateTime @default(now())
+  // Výchozí dávka v gramech — u espressa daná velikostí koše (18 g pro
+  // IMS Big Bang 18–20 g), u filtru záleží na objemu.
+  defaultDoseGrams Float?
+  isCustom     Boolean    @default(false)
+  sortOrder    Int        @default(0)
+  createdAt    DateTime   @default(now())
 
+  recipes  Recipe[]
+  profiles PressureProfile[]
+}
+
+// Tlakový profil pro pákový kávovar (Flair 58+ 2 má manometr, takže
+// tlak jde reálně cílit). Profil je předpis: posloupnost fází, každá
+// s cílovým tlakem a délkou. Časovač v appce jimi provede.
+model PressureProfile {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  description String?
+
+  method   BrewMethod @relation(fields: [methodId], references: [id], onDelete: Cascade)
+  methodId String
+
+  // Doporučené výchozí hodnoty, kterými profil předvyplní kalkulačku.
+  defaultRatio     Float?
+  defaultDoseGrams Float?
+  // Doporučený posun mletí oproti tvému běžnému espresso nastavení,
+  // v klicích mlýnku (kladné = hrubší). Turbo shot chce výrazně hrubší
+  // mletí, blooming zhruba stejné jako klasika.
+  grindOffsetClicks Int?
+  waterTempC        Float?
+
+  isCustom  Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  phases  PressurePhase[]
   recipes Recipe[]
+}
+
+// Jedna fáze tlakového profilu, např. "preinfuze 3 bar, 10 s".
+model PressurePhase {
+  id        String          @id @default(cuid())
+  profile   PressureProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profileId String
+
+  order Int // pořadí fáze v profilu, od 0
+  label String // "Preinfuze", "Náběh", "Špička", "Doběh", ...
+
+  // Cílový tlak jako rozsah (na páce se přesná hodnota drží těžko).
+  // Blooming má fázi s nulovým tlakem — proto jsou hodnoty nullable.
+  targetBarMin Float?
+  targetBarMax Float?
+
+  durationSeconds Int
+  note            String?
+
+  @@unique([profileId, order])
 }
 
 // Konkrétní recept/pokus přípravy daného zrnka danou metodou.
@@ -74,19 +150,36 @@ model Recipe {
   method   BrewMethod @relation(fields: [methodId], references: [id])
   methodId String
 
-  ratio       Float // použitý poměr káva:voda (jmenovatel, může se lišit od defaultu metody)
-  coffeeGrams Float
-  waterGrams  Float
+  // Použitý tlakový profil (jen u espressa).
+  profile   PressureProfile? @relation(fields: [profileId], references: [id])
+  profileId String?
 
-  // Hrubost mletí je záměrně text, ne pevná číselná škála — mlýnky mají
-  // různé stupnice (kliky, čísla, popisky), takže si sem napíšeš cokoliv
-  // dává smysl pro tvůj mlýnek, např. "Comandante 25 kliků".
-  grindSetting String?
-  waterTempC   Float?
+  // Dávka mleté kávy a výdej (u espressa vážený nápoj v šálku, u filtru
+  // množství vody) — obojí v gramech. `ratio` je jejich podíl, ukládá se
+  // odvozeně, aby šlo řadit a porovnávat bez počítání.
+  ratio       Float
+  doseGrams   Float
+  yieldGrams  Float
 
-  bloomSeconds       Int? // délka bloom fáze v appce
+  // Nastavení mlýnku 1Zpresso J-Ultra ve tvaru X.X.X (otáčky, číslo,
+  // klik). Ukládá se po složkách, aby appka uměla spočítat rozdíl mezi
+  // dvěma pokusy v klicích a navrhnout konkrétní posun.
+  grindRotations Int?
+  grindNumber    Int?
+  grindClicks    Int?
+  // Volný popis mletí — pro jiný mlýnek nebo starší záznamy.
+  grindNote      String?
+
+  waterTempC Float?
+
+  bloomSeconds       Int? // délka bloom/preinfuzní fáze
   targetTotalSeconds Int? // plánovaná celková doba extrakce
   actualTotalSeconds Int? // skutečně naměřená doba (z časovače nebo ručně)
+
+  // Záznam vybavení, kterým se to vařilo — snapshot z nastavení v době
+  // uložení, aby historie dávala smysl i po výměně mlýnku či kávovaru.
+  grinderLabel String?
+  brewerLabel  String?
 
   rating Int? // celkové hodnocení výsledného šálku, škála 1–5
   notes  String?
@@ -95,4 +188,25 @@ model Recipe {
   createdAt DateTime @default(now())
 
   @@index([beanId, brewedAt])
+}
+
+// Nastavení appky. Protože jde o osobní log jednoho člověka, je tu vždy
+// právě jeden řádek (`id` je natvrdo "singleton") — díky tomu se dá číst
+// bez řešení "který záznam je ten můj".
+model Settings {
+  id String @id @default("singleton")
+
+  grinderName String @default("1Zpresso J-Ultra")
+  brewerName  String @default("Flair 58+ 2")
+  basketName  String @default("IMS Big Bang 58 mm, 18–20 g (H23,5)")
+  screenName  String @default("IMS Big Bang puck screen")
+
+  // Výchozí dávka do koše a běžné espresso nastavení mlýnku, od kterého
+  // se odvozují doporučené posuny pro jednotlivé profily.
+  defaultDoseGrams   Float @default(18)
+  baseGrindRotations Int   @default(0)
+  baseGrindNumber    Int   @default(8)
+  baseGrindClicks    Int   @default(3)
+
+  updatedAt DateTime @updatedAt
 }

@@ -1,8 +1,8 @@
 "use client";
 
-// Vstup pro hodnocení chuti na škále 1–5 formou tlačítek (místo textového
-// pole nebo posuvníku) — na dotek/kliknutí je to rychlejší a jasně vidět,
-// co je vybrané.
+// Vstup pro hodnocení na škále 1–5 formou tlačítek (místo textového
+// pole nebo posuvníku) — na dotek/kliknutí je to rychlejší a jasně
+// vidět, co je vybrané.
 type RatingInputProps = {
   name: string;
   label: string;
@@ -14,12 +14,12 @@ const SCALE = [1, 2, 3, 4, 5];
 export function RatingInput({ name, label, defaultValue }: RatingInputProps) {
   return (
     <fieldset>
-      <legend className="text-sm font-medium text-neutral-700">{label}</legend>
-      <div className="mt-1 flex gap-2" role="radiogroup" aria-label={label}>
+      <legend className="text-sm font-medium text-stone-300">{label}</legend>
+      <div className="mt-1.5 flex items-center gap-2" role="radiogroup" aria-label={label}>
         {SCALE.map((value) => (
           <label
             key={value}
-            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-neutral-300 text-sm has-checked:border-amber-700 has-checked:bg-amber-700 has-checked:text-white"
+            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-stone-700 text-sm text-stone-300 transition hover:border-stone-600 has-checked:border-amber-600 has-checked:bg-amber-700 has-checked:text-white"
           >
             <input
               type="radio"
@@ -31,8 +31,14 @@ export function RatingInput({ name, label, defaultValue }: RatingInputProps) {
             {value}
           </label>
         ))}
-        <label className="flex h-9 items-center px-2 text-xs text-neutral-500 has-checked:font-medium has-checked:text-amber-700">
-          <input type="radio" name={name} value="" defaultChecked={!defaultValue} className="sr-only" />
+        <label className="flex h-9 cursor-pointer items-center px-2 text-xs text-stone-600 transition has-checked:font-medium has-checked:text-amber-400">
+          <input
+            type="radio"
+            name={name}
+            value=""
+            defaultChecked={!defaultValue}
+            className="sr-only"
+          />
           neurčeno
         </label>
       </div>
