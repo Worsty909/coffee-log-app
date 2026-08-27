@@ -10,6 +10,13 @@ export default defineConfig({
     seed: "tsx prisma/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Migrace potřebují přímé spojení do Postgresu — přes connection
+    // pooler (např. Neon "pooled" connection string / PgBouncer) se
+    // spolehlivě nezíská advisory lock, který `prisma migrate` používá,
+    // a migrace pak spadne na timeoutu. `DIRECT_URL` proto míří na
+    // nepoolovanou connection string; appka za běhu (src/lib/prisma.ts)
+    // pořád používá poolovanou `DATABASE_URL` beze změny. Lokálně stačí
+    // jen `DATABASE_URL` (lokální Postgres žádný pooler nemá).
+    url: process.env["DIRECT_URL"] ?? process.env["DATABASE_URL"],
   },
 });
