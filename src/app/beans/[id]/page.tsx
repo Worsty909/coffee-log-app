@@ -27,6 +27,12 @@ export default async function BeanDetailPage({
         </div>
         <div className="flex shrink-0 gap-2">
           <Link
+            href={`/brew/new?beanId=${bean.id}`}
+            className="rounded-md bg-amber-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-900"
+          >
+            Nový recept
+          </Link>
+          <Link
             href={`/beans/${bean.id}/edit`}
             className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50"
           >

@@ -33,6 +33,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Link href="/beans" className="text-sm text-neutral-600 hover:text-neutral-900">
               Zrnka
             </Link>
+            <Link href="/brew/new" className="text-sm text-neutral-600 hover:text-neutral-900">
+              Vařím
+            </Link>
           </nav>
         </header>
         <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">{children}</main>
