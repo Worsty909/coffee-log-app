@@ -1,5 +1,8 @@
+import Link from "next/link";
 import { formatSeconds } from "@/lib/format";
 import { describeGrindDelta, formatGrind, type GrindSetting } from "@/lib/grind";
+import { deleteRecipe } from "@/lib/actions/recipes";
+import { DeleteRecipeButton } from "./DeleteRecipeButton";
 
 type RecipeListItem = {
   id: string;
@@ -58,11 +61,20 @@ export function RecipeHistoryList({ recipes }: { recipes: RecipeListItem[] }) {
               <p className="text-sm font-medium text-stone-100">
                 {recipe.profile?.name ?? recipe.method.name}
               </p>
-              {recipe.rating && (
-                <span className="shrink-0 rounded-full bg-amber-900/40 px-2 py-0.5 text-xs font-medium text-amber-300">
-                  {recipe.rating}/5
-                </span>
-              )}
+              <div className="flex shrink-0 items-center gap-2">
+                {recipe.rating && (
+                  <span className="rounded-full bg-amber-900/40 px-2 py-0.5 text-xs font-medium text-amber-300">
+                    {recipe.rating}/5
+                  </span>
+                )}
+                <Link
+                  href={`/recipes/${recipe.id}/edit`}
+                  className="text-xs text-stone-500 hover:text-stone-300 hover:underline"
+                >
+                  Upravit
+                </Link>
+                <DeleteRecipeButton action={deleteRecipe.bind(null, recipe.id)} />
+              </div>
             </div>
 
             <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs tabular-nums text-stone-400">

@@ -31,7 +31,7 @@ export function formatPhasePressure(phase: TimerPhase): string | null {
 }
 
 /** Popis fáze pro seznam: tlak a délka, nebo jen délka u filtru. */
-function describePhase(phase: TimerPhase): string {
+export function describePhase(phase: TimerPhase): string {
   const pressure = formatPhasePressure(phase);
   return pressure ? `${pressure} · ${phase.durationSeconds} s` : `${phase.durationSeconds} s`;
 }

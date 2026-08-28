@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { baseGrindSetting, getSettings } from "@/lib/settings";
 import { BrewForm, type BrewFormPrefill } from "@/components/brew/BrewForm";
+import { createRecipe } from "@/lib/actions/recipes";
 
 // Deník se mění při každém uložení, takže stránku renderujeme vždy
 // čerstvou místo statického prerenderu při buildu.
@@ -78,6 +79,7 @@ export default async function NewBrewPage({
           baseGrind: baseGrindSetting(settings),
         }}
         prefill={prefill}
+        action={createRecipe}
       />
     </div>
   );
