@@ -32,7 +32,13 @@ plochu" a chová se jako instalovaná appka.
   kliky, takže umí říct „o 6 kliků jemnější" místo vágního „zkus jinou
   hrubost".
 - **Filtr**: překapávač, V60, aeropress, moka, french press — poměr,
-  vlastní cílový čas a bloom, bez tlakových profilů.
+  vlastní cílový čas a bloom, bez tlakových profilů (pokud si pro
+  metodu nezaložíš vlastní recept s fázemi, viz níže).
+- **Správa receptů** (`/profiles`): vestavěné i vlastní recepty (šablony
+  s fázemi časovače) jdou přímo v appce přejmenovat, upravit i smazat —
+  včetně přidávání/mazání/přeřazování jednotlivých fází. Tlak (bar) se
+  zadává jen u espressa, u filtru recept obsahuje jen název, délku a
+  poznámku fáze.
 - **Vybavení**: mlýnek, kávovar, koš a puck screen se nastavují na
   jednom místě a ukládají se ke každému receptu jako snapshot, aby
   historie dávala smysl i po výměně vybavení.

@@ -8,9 +8,10 @@ import { NumberField } from "@/components/ui/NumberField";
 import { applyBrewEdit, changeDerivedField, type BrewField, type BrewValues } from "@/lib/brew-math";
 import { durationToInput, parseDuration } from "@/lib/format";
 import { formatGrind, shiftGrind, type GrindSetting } from "@/lib/grind";
+import Link from "next/link";
 import { RatioCalculator } from "./RatioCalculator";
 import { GrindInput } from "./GrindInput";
-import { PhaseTimer, formatPhasePressure, type TimerPhase } from "./PhaseTimer";
+import { PhaseTimer, describePhase, type TimerPhase } from "./PhaseTimer";
 
 export type BrewMethodOption = {
   id: string;
@@ -70,10 +71,11 @@ type BrewFormProps = {
 };
 
 /**
- * Filtrová příprava nemá tlakové fáze — časovač u ní jen odděluje bloom
- * od zbytku extrakce podle časů, které si zadáš.
+ * Bez vybraného receptu (žádný recept pro metodu neexistuje, nebo sis
+ * zvolil "Bez receptu") appka fáze poskládá sama jen z bloomu a
+ * cílového času, které zadáš ručně — bez tlaku, bez dalšího členění.
  */
-function buildFilterPhases(bloomText: string, totalText: string): TimerPhase[] {
+function buildManualPhases(bloomText: string, totalText: string): TimerPhase[] {
   const total = parseDuration(totalText) ?? 0;
   const bloom = parseDuration(bloomText) ?? 0;
 
@@ -139,19 +141,19 @@ export function BrewForm({
   const [actualTime, setActualTime] = useState(
     prefill?.actualTotalSeconds != null ? durationToInput(prefill.actualTotalSeconds) : "",
   );
-  // U filtru si cílový čas a bloom zadáváš sám; u espressa je oboje
-  // dané zvoleným tlakovým profilem.
-  const [filterTargetTime, setFilterTargetTime] = useState(
+  // Bez vybraného receptu si cílový čas a bloom zadáváš sám; s receptem
+  // je oboje dané jeho fázemi.
+  const [manualTargetTime, setManualTargetTime] = useState(
     prefill?.targetTotalSeconds != null ? durationToInput(prefill.targetTotalSeconds) : "2:30",
   );
-  const [filterBloomTime, setFilterBloomTime] = useState(
+  const [manualBloomTime, setManualBloomTime] = useState(
     prefill?.bloomSeconds != null ? durationToInput(prefill.bloomSeconds) : "30",
   );
 
-  // Profil doporučuje posun mletí oproti tvému běžnému espresso
+  // Recept doporučuje posun mletí oproti tvému běžnému espresso
   // nastavení — turbo shot výrazně hrubší, klasika beze změny.
   const suggestedGrind =
-    isEspresso && profile?.grindOffsetClicks != null
+    profile?.grindOffsetClicks != null
       ? shiftGrind(settings.baseGrind, profile.grindOffsetClicks)
       : null;
 
@@ -167,8 +169,11 @@ export function BrewForm({
     if (nextProfile?.waterTempC != null) setWaterTemp(String(nextProfile.waterTempC));
   }
 
-  function handleProfileChange(id: string) {
+  // `id === null` znamená "Bez receptu" — appka nechá aktuální hodnoty
+  // být a přepne na ruční zadání cílového času a bloomu.
+  function handleProfileChange(id: string | null) {
     setProfileId(id);
+    if (id === null) return;
     const next = methodProfiles.find((p) => p.id === id);
     if (!next) return;
     applyDefaults(
@@ -190,10 +195,11 @@ export function BrewForm({
     });
   }
 
-  // Fáze pro časovač: u espressa přímo z profilu, u filtru se poskládají
-  // ze zadaného bloomu a cílového času.
-  const timerPhases: TimerPhase[] =
-    isEspresso && profile ? profile.phases : buildFilterPhases(filterBloomTime, filterTargetTime);
+  // Fáze pro časovač: podle vybraného receptu, jinak ze zadaného bloomu
+  // a cílového času.
+  const timerPhases: TimerPhase[] = profile
+    ? profile.phases
+    : buildManualPhases(manualBloomTime, manualTargetTime);
 
   const targetSeconds = timerPhases.reduce((sum, phase) => sum + phase.durationSeconds, 0);
 
@@ -226,7 +232,7 @@ export function BrewForm({
       )}
 
       <input type="hidden" name="methodId" value={methodId} />
-      <input type="hidden" name="profileId" value={isEspresso && profileId ? profileId : ""} />
+      <input type="hidden" name="profileId" value={profileId ?? ""} />
       <input type="hidden" name="ratio" value={values.ratio} />
 
       {/* Metoda — espresso je hlavní, filtr vedle. */}
@@ -247,10 +253,38 @@ export function BrewForm({
         ))}
       </div>
 
-      {isEspresso && methodProfiles.length > 0 && (
+      {methodProfiles.length > 0 && (
         <section className="rounded-xl border border-stone-800 bg-stone-900/60 p-4">
-          <h2 className="text-sm font-semibold text-stone-200">Tlakový profil</h2>
+          <div className="flex items-baseline justify-between gap-2">
+            <h2 className="text-sm font-semibold text-stone-200">Recept</h2>
+            <Link href="/profiles" className="text-xs text-amber-500 hover:underline">
+              Spravovat recepty
+            </Link>
+          </div>
           <div className="mt-3 space-y-2">
+            <label
+              className={`block cursor-pointer rounded-lg border p-3 transition ${
+                profileId === null
+                  ? "border-amber-700 bg-amber-950/30"
+                  : "border-stone-800 hover:border-stone-700"
+              }`}
+            >
+              <input
+                type="radio"
+                name="profileChoice"
+                value=""
+                checked={profileId === null}
+                onChange={() => handleProfileChange(null)}
+                className="sr-only"
+              />
+              <span
+                className={`text-sm font-medium ${
+                  profileId === null ? "text-amber-300" : "text-stone-200"
+                }`}
+              >
+                Bez receptu (ručně)
+              </span>
+            </label>
             {methodProfiles.map((option) => (
               <label
                 key={option.id}
@@ -287,9 +321,7 @@ export function BrewForm({
                 )}
                 {option.id === profileId && option.phases.length > 0 && (
                   <p className="mt-2 text-xs text-stone-500">
-                    {option.phases
-                      .map((phase) => `${phase.label} ${formatPhasePressure(phase)} / ${phase.durationSeconds}s`)
-                      .join(" → ")}
+                    {option.phases.map((phase) => `${phase.label} ${describePhase(phase)}`).join(" → ")}
                   </p>
                 )}
               </label>
@@ -333,7 +365,7 @@ export function BrewForm({
         }
       />
 
-      <div className={`grid gap-4 ${isEspresso ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
+      <div className={`grid gap-4 ${profile ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
         <NumberField
           id="waterTempC"
           name="waterTempC"
@@ -342,14 +374,14 @@ export function BrewForm({
           onChange={setWaterTemp}
           suffix="°C"
         />
-        {isEspresso ? (
+        {profile ? (
           <NumberField
             id="targetTotalSeconds"
             name="targetTotalSeconds"
             label="Cílový čas"
             value={durationToInput(targetSeconds)}
             readOnly
-            hint="Součet fází profilu"
+            hint="Součet fází receptu"
           />
         ) : (
           <>
@@ -357,16 +389,16 @@ export function BrewForm({
               id="targetTotalSeconds"
               name="targetTotalSeconds"
               label="Cílový čas"
-              value={filterTargetTime}
-              onChange={setFilterTargetTime}
+              value={manualTargetTime}
+              onChange={setManualTargetTime}
               placeholder="např. 2:30"
             />
             <NumberField
               id="bloomSeconds"
               name="bloomSeconds"
               label="Bloom"
-              value={filterBloomTime}
-              onChange={setFilterBloomTime}
+              value={manualBloomTime}
+              onChange={setManualBloomTime}
               suffix="s"
               hint="0 = bez bloomu"
             />
@@ -374,8 +406,8 @@ export function BrewForm({
         )}
       </div>
 
-      {/* U espressa je bloom součástí fází profilu — uložíme délku první fáze. */}
-      {isEspresso && (
+      {/* S vybraným receptem je bloom součástí jeho fází — uložíme délku první fáze. */}
+      {profile && (
         <input
           type="hidden"
           name="bloomSeconds"
