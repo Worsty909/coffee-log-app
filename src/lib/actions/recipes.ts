@@ -38,6 +38,33 @@ export async function createRecipe(
   redirect(`/beans/${beanId}`);
 }
 
+export async function updateRecipe(
+  recipeId: string,
+  _prevState: RecipeFormState,
+  formData: FormData,
+): Promise<RecipeFormState> {
+  let beanId: string;
+  try {
+    const data = recipeInputSchema.parse(Object.fromEntries(formData));
+    // Vybavení (grinderLabel/brewerLabel) se při editaci nepřepisuje —
+    // je to snapshot toho, čím se opravdu vařilo, ne aktuální nastavení.
+    // Oprava překlepu v receptu nemá měnit, jaké vybavení historie ukazuje.
+    const recipe = await prisma.recipe.update({ where: { id: recipeId }, data });
+    beanId = recipe.beanId;
+  } catch (error) {
+    return { error: describeError(error) };
+  }
+
+  revalidatePath(`/beans/${beanId}`);
+  redirect(`/beans/${beanId}`);
+}
+
+export async function deleteRecipe(recipeId: string): Promise<void> {
+  const recipe = await prisma.recipe.delete({ where: { id: recipeId } });
+  revalidatePath(`/beans/${recipe.beanId}`);
+  redirect(`/beans/${recipe.beanId}`);
+}
+
 function describeError(error: unknown): string {
   if (error && typeof error === "object" && "issues" in error) {
     const zodError = error as { issues: { message: string }[] };

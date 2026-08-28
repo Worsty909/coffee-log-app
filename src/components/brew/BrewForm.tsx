@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { createRecipe } from "@/lib/actions/recipes";
+import type { RecipeFormState } from "@/lib/actions/recipes";
 import { RatingInput } from "@/components/beans/RatingInput";
 import { NumberField } from "@/components/ui/NumberField";
 import { applyBrewEdit, changeDerivedField, type BrewField, type BrewValues } from "@/lib/brew-math";
@@ -39,6 +39,13 @@ export type BrewFormPrefill = {
   yieldGrams: number;
   grind: GrindSetting | null;
   waterTempC: number | null;
+  // Vyplněné jen při editaci existujícího receptu — nový recept tyhle
+  // hodnoty nemá čím předvyplnit.
+  rating?: number | null;
+  notes?: string | null;
+  actualTotalSeconds?: number | null;
+  targetTotalSeconds?: number | null;
+  bloomSeconds?: number | null;
 } | null;
 
 type BrewFormProps = {
@@ -52,8 +59,14 @@ type BrewFormProps = {
     defaultDoseGrams: number;
     baseGrind: GrindSetting;
   };
-  /** Poslední použitý recept na tomhle zrnku — výchozí bod pro další pokus. */
+  /**
+   * Buď poslední použitý recept na tomhle zrnku (výchozí bod pro nový
+   * pokus), nebo — při editaci — přímo upravovaný recept.
+   */
   prefill: BrewFormPrefill;
+  /** Server akce, které se pošle formulář — nový recept, nebo úprava existujícího. */
+  action: (prevState: RecipeFormState, formData: FormData) => Promise<RecipeFormState>;
+  submitLabel?: string;
 };
 
 /**
@@ -83,8 +96,10 @@ export function BrewForm({
   initialBeanId,
   settings,
   prefill,
+  action,
+  submitLabel = "Uložit recept",
 }: BrewFormProps) {
-  const [state, formAction] = useActionState(createRecipe, { error: null });
+  const [state, formAction] = useActionState(action, { error: null });
 
   const initialMethod =
     methods.find((m) => m.id === prefill?.methodId) ??
@@ -119,12 +134,19 @@ export function BrewForm({
     String(prefill?.waterTempC ?? profile?.waterTempC ?? ""),
   );
   // Časy držíme jako text ("32" i "2:45") — na sekundy je převede až
-  // validace při ukládání (viz lib/validation/recipe.ts).
-  const [actualTime, setActualTime] = useState("");
+  // validace při ukládání (viz lib/validation/recipe.ts). Při editaci se
+  // předvyplní z upravovaného receptu, jinak zůstávají prázdné/výchozí.
+  const [actualTime, setActualTime] = useState(
+    prefill?.actualTotalSeconds != null ? durationToInput(prefill.actualTotalSeconds) : "",
+  );
   // U filtru si cílový čas a bloom zadáváš sám; u espressa je oboje
   // dané zvoleným tlakovým profilem.
-  const [filterTargetTime, setFilterTargetTime] = useState("2:30");
-  const [filterBloomTime, setFilterBloomTime] = useState("30");
+  const [filterTargetTime, setFilterTargetTime] = useState(
+    prefill?.targetTotalSeconds != null ? durationToInput(prefill.targetTotalSeconds) : "2:30",
+  );
+  const [filterBloomTime, setFilterBloomTime] = useState(
+    prefill?.bloomSeconds != null ? durationToInput(prefill.bloomSeconds) : "30",
+  );
 
   // Profil doporučuje posun mletí oproti tvému běžnému espresso
   // nastavení — turbo shot výrazně hrubší, klasika beze změny.
@@ -373,7 +395,7 @@ export function BrewForm({
         hint="Vyplní se sám po zastavení časovače, jde přepsat."
       />
 
-      <RatingInput name="rating" label="Hodnocení šálku" defaultValue={null} />
+      <RatingInput name="rating" label="Hodnocení šálku" defaultValue={prefill?.rating ?? null} />
 
       <div>
         <label htmlFor="notes" className="block text-sm font-medium text-stone-300">
@@ -383,6 +405,7 @@ export function BrewForm({
           id="notes"
           name="notes"
           rows={3}
+          defaultValue={prefill?.notes ?? ""}
           placeholder="Chuť, co příště zkusit…"
           className="mt-1 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 outline-none focus:border-amber-600"
         />
@@ -397,12 +420,12 @@ export function BrewForm({
 
       {state.error && <p className="text-sm text-red-400">{state.error}</p>}
 
-      <SubmitButton />
+      <SubmitButton label={submitLabel} />
     </form>
   );
 }
 
-function SubmitButton() {
+function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return (
     <button
@@ -410,7 +433,7 @@ function SubmitButton() {
       disabled={pending}
       className="w-full rounded-lg bg-amber-700 px-4 py-3 text-sm font-medium text-white hover:bg-amber-600 disabled:opacity-50"
     >
-      {pending ? "Ukládám…" : "Uložit recept"}
+      {pending ? "Ukládám…" : label}
     </button>
   );
 }
