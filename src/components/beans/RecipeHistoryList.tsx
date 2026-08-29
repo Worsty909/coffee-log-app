@@ -106,7 +106,7 @@ export function RecipeHistoryList({ recipes }: { recipes: RecipeListItem[] }) {
             {recipe.notes && <p className="mt-2 text-sm text-stone-300">{recipe.notes}</p>}
 
             <p className="mt-2 text-xs text-stone-600">
-              {recipe.brewedAt.toLocaleString("cs-CZ")}
+              {recipe.brewedAt.toLocaleString("cs-CZ", { timeZone: "Europe/Prague" })}
             </p>
           </li>
         );
