@@ -17,12 +17,14 @@ datasource db {
 }
 
 // Způsob zpracování kávových třešní na sušárně/pražírně.
-// "OTHER" pokrývá exotičtější metody (anaerobic, carbonic maceration, ...) —
+// "OTHER" pokrývá metody mimo tenhle výčet (carbonic maceration, ...) —
 // konkrétní popis pak patří do volného pole `notes` u zrnka.
 enum Process {
   WASHED
   NATURAL
   HONEY
+  ANAEROBIC
+  EXPERIMENTAL
   OTHER
 }
 
