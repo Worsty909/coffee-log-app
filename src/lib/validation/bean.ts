@@ -31,6 +31,8 @@ export const processLabels: Record<Process, string> = {
   WASHED: "Washed (mytý)",
   NATURAL: "Natural (přírodní)",
   HONEY: "Honey",
+  ANAEROBIC: "Anaerobní",
+  EXPERIMENTAL: "Experimentální",
   OTHER: "Jiné",
 };
 
