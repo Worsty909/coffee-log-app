@@ -10,10 +10,11 @@ mletí, tlakový profil, teplota, čas) k nim vedly k dobrému výsledku,
 nabídne poslední použitý recept jako výchozí bod a poradí konkrétní
 posun mletí, když se něco kazí.
 
-Jde o čistě osobní nástroj — bez přihlašování, bez víc uživatelů. Slouží
-jen jako záznam pro jednoho člověka, synchronizovaný mezi zařízeními díky
-databázi na netu. Appka je zároveň PWA — na mobilu jde "Přidat na
-plochu" a chová se jako instalovaná appka.
+Jde o čistě osobní nástroj pro jednoho člověka — bez uživatelských účtů,
+jen zamčený jedním číselným PINem (viz [Zabezpečení](#zabezpečení-pin)).
+Data jsou synchronizovaná mezi zařízeními díky databázi na netu. Appka
+je zároveň PWA — na mobilu jde "Přidat na plochu" a chová se jako
+instalovaná appka.
 
 ## Funkce
 
@@ -42,6 +43,15 @@ plochu" a chová se jako instalovaná appka.
 - **Vybavení**: mlýnek, kávovar, koš a puck screen se nastavují na
   jednom místě a ukládají se ke každému receptu jako snapshot, aby
   historie dávala smysl i po výměně vybavení.
+- **Čerstvost zrnka**: z data pražení appka spočítá stáří a napoví, jestli
+  zrno ještě odpočívá, je v nejlepší formě, nebo už vyprchává.
+- **Historie receptů**: nejlíp hodnocený pokus je vyznačený a kterýkoli
+  recept jde tlačítkem „Zopakovat" použít jako výchozí bod nové přípravy.
+  Seznam zrnek jde prohledávat (od šesti zrnek výš) a ukazuje nejlepší
+  dosažené hodnocení.
+- **Časovač** měří podle hodin (nezpožďuje se na pozadí), během měření
+  nenechá zhasnout displej a při přechodu fáze zavibruje (kde to
+  prohlížeč umí).
 - **Doporučení** (heuristika, ne strojové učení): porovná naměřený čas
   s plánem profilu a navrhne konkrétní nastavení mlýnku; při třech
   klesajících hodnoceních po sobě odkáže na mletí nejlíp hodnoceného
@@ -92,8 +102,9 @@ Pokud máš Postgres už vlastní, uprav si podle něj proměnnou `DATABASE_URL`
 cp .env.example .env
 ```
 
-Výchozí hodnota v `.env.example` sedí na Docker Compose databázi z kroku
-2, není potřeba nic měnit, pokud používáš ji.
+Výchozí `DATABASE_URL` v `.env.example` sedí na Docker Compose databázi
+z kroku 2. Doplnit musíš jen **`APP_PIN`** — svůj přihlašovací PIN
+(4–12 číslic). Bez něj zůstane appka zamčená.
 
 ### 4. Databázové schéma a výchozí data
 
@@ -140,13 +151,14 @@ Appka běží na [http://localhost:3000](http://localhost:3000).
 
 ```
 prisma/
-  schema.prisma        # datový model (Bean, BrewMethod, PressureProfile, Recipe, Settings)
+  schema.prisma        # datový model (Bean, BrewMethod, PressureProfile, Recipe, Settings, LoginThrottle)
   migrations/           # historie změn databázového schématu
   seed.ts               # výchozí metody, tlakové profily a nastavení vybavení
 src/
   app/
     beans/               # stránky evidence zrnek (seznam, detail, nový, úprava)
     brew/new/             # kalkulačka, tlakové profily a časovač
+    login/                 # přihlašovací obrazovka s PINem
     settings/              # nastavení vybavení a výchozích hodnot
     icon.tsx, manifest.ts   # ikona appky a PWA manifest
   components/
@@ -154,7 +166,10 @@ src/
     brew/                 # kalkulačka poměru, mletí, fázový časovač
     settings/              # formulář nastavení
     ui/                     # sdílené vstupy (číselné pole)
+  proxy.ts                # brána: bez přihlášení pustí jen na /login
   lib/
+    auth/                  # session cookie, zámek po chybných pokusech (+ testy)
+    freshness.ts            # stáří zrnka od data pražení (+ testy)
     actions/               # Server Actions — veškerá zápisová logika appky
     validation/             # zod schémata pro formuláře
     brew-math.ts             # dopočet dávky/výdeje/poměru (+ testy)
@@ -202,16 +217,54 @@ DATABASE_URL="<pooled connection string z Neon>" npx prisma db seed
 ### 3. Deploy na Vercel
 
 1. Na [vercel.com](https://vercel.com) založ nový projekt a propoj ho s tímhle GitHub repozitářem.
-2. V nastavení projektu (Environment Variables) přidej **obě** proměnné (pro
+2. V nastavení projektu (Environment Variables) přidej tyhle proměnné (pro
    Production i Preview prostředí):
    - `DATABASE_URL` = pooled connection string z Neonu
    - `DIRECT_URL` = přímá connection string z Neonu
+   - `APP_PIN` = tvůj přihlašovací PIN (4–12 číslic); ve Vercelu ho označ
+     jako **Sensitive**, ať nejde zpětně zobrazit ani v dashboardu
 3. V nastavení Build & Development Settings nastav **Build Command** na:
    ```
    npx prisma migrate deploy && next build
    ```
    Díky tomu se při každém dalším deploy automaticky aplikují i budoucí migrace (seed skript se spouští jen ručně, viz výše — je bezpečné ho spustit vícekrát, ale není potřeba ho pouštět při každém buildu).
 4. Deploy. Vercel appku automaticky znovu nasadí při každém pushi do repozitáře.
+
+## Zabezpečení (PIN)
+
+Celá appka — stránky, ukládání i nahrané fotky — je za přihlášením
+číselným PINem. Navrženo je to tak, aby PIN nešel zjistit ani z kódu,
+ani zkoušením:
+
+- **PIN není v repozitáři ani v databázi**, ani jako hash (hash
+  čtyřmístného čísla jde uhodnout vyzkoušením všech 10 000 možností).
+  Existuje jen jako proměnná prostředí `APP_PIN` na serveru; do
+  prohlížeče se nikdy neposílá a kontroluje se výhradně na serveru.
+- **Hádání brzdí zámek**: 5 chybných pokusů po sobě je zdarma, pak se
+  čekání s každým dalším zdvojnásobuje (1 min, 2 min, 4 min… až 24 h).
+  Počítadlo je v databázi a je společné pro všechny — nejde obejít
+  střídáním IP adres ani souběžnými požadavky. Vyzkoušet všechny
+  čtyřmístné PINy by tak trvalo desítky let. Správné přihlášení
+  počítadlo vynuluje.
+- **Přihlášení** drží podepsaná `httpOnly` cookie (90 dní na zařízení).
+  Podpis stojí na tajemství ze serveru (`AUTH_SECRET`, nebo když ho
+  nenastavíš, `DATABASE_URL`), takže ji nejde podvrhnout.
+- Kontrola běží na dvou místech: `src/proxy.ts` před každým requestem
+  a znovu v každé server akci (`requireAuth`).
+
+Praktické věci:
+
+| Chci… | Jak |
+|---|---|
+| změnit PIN | změň `APP_PIN` a appku znovu nasaď — zároveň to odhlásí všechna zařízení |
+| odhlásit jedno zařízení | Vybavení → Zabezpečení → „Odhlásit toto zařízení" |
+| odhlásit všechna zařízení | změň `APP_PIN` nebo `AUTH_SECRET` |
+| zrušit zámek po chybných pokusech | počkej, nebo v databázi spusť `UPDATE "LoginThrottle" SET "failedAttempts" = 0, "lockedUntil" = NULL;` |
+
+Poctivě k limitům: zámek je společný, takže kdo zná adresu appky, může
+schválně zadávat špatné PINy a přihlášení ti tím dočasně zablokovat (k
+datům se ale nedostane a už přihlášená zařízení fungují dál). A PIN
+samozřejmě uvidí každý, kdo má přístup k nastavení projektu na Vercelu.
 
 ### Známé omezení: fotky štítků na Vercelu
 

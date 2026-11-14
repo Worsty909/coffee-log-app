@@ -7,7 +7,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { saveUploadedImage, UploadError } from "@/lib/storage";
+import { saveUploadedImage } from "@/lib/storage";
+import { requireAuth } from "@/lib/auth/server";
+import { describeActionError } from "./errors";
 import { beanInputSchema } from "@/lib/validation/bean";
 
 export type BeanFormState = {
@@ -34,6 +36,7 @@ export async function createBean(
   _prevState: BeanFormState,
   formData: FormData,
 ): Promise<BeanFormState> {
+  await requireAuth();
   let beanId: string;
   try {
     const data = readBeanFormData(formData);
@@ -41,7 +44,7 @@ export async function createBean(
     const bean = await prisma.bean.create({ data: { ...data, photoUrl } });
     beanId = bean.id;
   } catch (error) {
-    return { error: describeError(error) };
+    return { error: describeActionError(error) };
   }
 
   revalidatePath("/beans");
@@ -53,6 +56,7 @@ export async function updateBean(
   _prevState: BeanFormState,
   formData: FormData,
 ): Promise<BeanFormState> {
+  await requireAuth();
   try {
     const data = readBeanFormData(formData);
     const photoUrl = await extractPhotoUrl(formData);
@@ -61,7 +65,7 @@ export async function updateBean(
       data: { ...data, ...(photoUrl ? { photoUrl } : {}) },
     });
   } catch (error) {
-    return { error: describeError(error) };
+    return { error: describeActionError(error) };
   }
 
   revalidatePath("/beans");
@@ -70,20 +74,8 @@ export async function updateBean(
 }
 
 export async function deleteBean(beanId: string): Promise<void> {
+  await requireAuth();
   await prisma.bean.delete({ where: { id: beanId } });
   revalidatePath("/beans");
   redirect("/beans");
-}
-
-function describeError(error: unknown): string {
-  if (error instanceof UploadError) {
-    return error.message;
-  }
-  if (error && typeof error === "object" && "issues" in error) {
-    // Chyba z zod validace — vezmeme první hlášku, ať uživatel ví, co opravit.
-    const zodError = error as { issues: { message: string }[] };
-    return zodError.issues[0]?.message ?? "Neplatná data formuláře.";
-  }
-  console.error(error);
-  return "Něco se nepovedlo. Zkus to prosím znovu.";
 }

@@ -47,13 +47,47 @@ export function describePhase(phase: TimerPhase): string {
 export function PhaseTimer({ phases, onStop }: PhaseTimerProps) {
   const [running, setRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Čas se počítá z hodin (rozdíl proti okamžiku startu), ne přičítáním
+  // jedničky každou sekundu — prohlížeč na pozadí nebo při zhasnutém
+  // displeji intervaly brzdí a časovač by se tiše zpožďoval.
+  const startedAtRef = useRef<number | null>(null);
+
+  const readElapsed = () =>
+    startedAtRef.current === null ? 0 : Math.floor((Date.now() - startedAtRef.current) / 1000);
 
   useEffect(() => {
     if (!running) return;
-    intervalRef.current = setInterval(() => setElapsed((value) => value + 1), 1000);
+    const interval = setInterval(() => setElapsed(readElapsed()), 200);
+    return () => clearInterval(interval);
+  }, [running]);
+
+  // Během měření nenecháme zhasnout displej (Screen Wake Lock API).
+  // Kde ho prohlížeč nepodporuje, se prostě nic nestane.
+  useEffect(() => {
+    if (!running || !("wakeLock" in navigator)) return;
+    let lock: WakeLockSentinel | null = null;
+    let cancelled = false;
+
+    const acquire = async () => {
+      try {
+        const next = await navigator.wakeLock.request("screen");
+        if (cancelled) void next.release();
+        else lock = next;
+      } catch {
+        // Zamítnuto (úsporný režim, stránka na pozadí) — nevadí.
+      }
+    };
+    // Zámek se uvolní při přepnutí pryč; po návratu si ho vezmeme znovu.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void acquire();
+    };
+
+    void acquire();
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      cancelled = true;
+      document.removeEventListener("visibilitychange", onVisible);
+      void lock?.release();
     };
   }, [running]);
 
@@ -71,17 +105,29 @@ export function PhaseTimer({ phases, onStop }: PhaseTimerProps) {
   const currentIndex = activeIndex === -1 ? phases.length - 1 : activeIndex;
   const overtime = elapsed > plannedTotal;
 
+  // Krátké zavibrování při přechodu do další fáze — při páčení se
+  // člověk dívá na manometr, ne na telefon.
+  useEffect(() => {
+    if (running && currentIndex > 0 && "vibrate" in navigator) {
+      navigator.vibrate(150);
+    }
+  }, [running, currentIndex]);
+
   function handleStart() {
+    startedAtRef.current = Date.now();
     setElapsed(0);
     setRunning(true);
   }
 
   function handleStop() {
+    const final = readElapsed();
+    setElapsed(final);
     setRunning(false);
-    onStop(elapsed);
+    onStop(final);
   }
 
   function handleReset() {
+    startedAtRef.current = null;
     setRunning(false);
     setElapsed(0);
   }

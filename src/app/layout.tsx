@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import { NavLinks } from "@/components/layout/NavLinks";
@@ -17,6 +17,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Coffee Log",
   description: "Osobní deník ochutnávek kávy a kalkulačka espressa.",
+  // Soukromý deník za PINem — vyhledávače tu nemají co indexovat.
+  robots: { index: false, follow: false },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#1c1917",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -27,7 +33,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col bg-stone-950 text-stone-100">
         <header className="border-b border-stone-800 bg-stone-900/80 backdrop-blur">
-          <nav className="mx-auto flex max-w-2xl items-center gap-5 px-4 py-3">
+          <nav className="mx-auto flex max-w-2xl items-center gap-3.5 overflow-x-auto whitespace-nowrap px-4 py-3 sm:gap-5">
             <Link href="/" className="font-semibold text-amber-500">
               Coffee Log
             </Link>

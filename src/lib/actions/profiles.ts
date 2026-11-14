@@ -7,28 +7,19 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/auth/server";
+import { describeActionError } from "./errors";
 import { profileInputSchema } from "@/lib/validation/profile";
 
 export type ProfileFormState = {
   error: string | null;
 };
 
-function describeError(error: unknown): string {
-  if (error && typeof error === "object" && "issues" in error) {
-    const zodError = error as { issues: { message: string }[] };
-    return zodError.issues[0]?.message ?? "Neplatná data formuláře.";
-  }
-  if (error && typeof error === "object" && "code" in error && error.code === "P2002") {
-    return "Recept s tímhle názvem už existuje.";
-  }
-  console.error(error);
-  return "Něco se nepovedlo. Zkus to prosím znovu.";
-}
-
 export async function createProfile(
   _prevState: ProfileFormState,
   formData: FormData,
 ): Promise<ProfileFormState> {
+  await requireAuth();
   try {
     const { phases, ...profile } = profileInputSchema.parse(Object.fromEntries(formData));
 
@@ -46,7 +37,7 @@ export async function createProfile(
       },
     });
   } catch (error) {
-    return { error: describeError(error) };
+    return { error: describeActionError(error, { duplicate: "Recept s tímhle názvem už existuje." }) };
   }
 
   revalidatePath("/profiles");
@@ -59,6 +50,7 @@ export async function updateProfile(
   _prevState: ProfileFormState,
   formData: FormData,
 ): Promise<ProfileFormState> {
+  await requireAuth();
   try {
     const { phases, ...profile } = profileInputSchema.parse(Object.fromEntries(formData));
 
@@ -72,7 +64,7 @@ export async function updateProfile(
       }),
     ]);
   } catch (error) {
-    return { error: describeError(error) };
+    return { error: describeActionError(error, { duplicate: "Recept s tímhle názvem už existuje." }) };
   }
 
   revalidatePath("/profiles");
@@ -81,6 +73,7 @@ export async function updateProfile(
 }
 
 export async function deleteProfile(profileId: string): Promise<void> {
+  await requireAuth();
   // Recepty, které tenhle recept použily, o něj nepřijdou — jen jim
   // zmizí odkaz na konkrétní recept (viz onDelete: SetNull ve schématu),
   // v historii se pak ukáže aspoň název metody.

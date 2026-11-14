@@ -1,8 +1,9 @@
 // Prisma schema — datový model aplikace Coffee Log & Brew Calculator.
 // Dokumentace: https://pris.ly/d/prisma-schema
 //
-// Appka je čistě osobní log bez přihlašování, takže tu nenajdeš žádnou
-// tabulku "User" — všechna data patří jedinému člověku, který appku hostuje.
+// Appka je čistě osobní log pro jednoho člověka (zamčený jedním PINem),
+// takže tu nenajdeš žádnou tabulku "User" — všechna data patří tomu, kdo
+// appku hostuje.
 //
 // Appka je stavěná primárně na espresso (Flair 58+ 2, mlýnek 1Zpresso
 // J-Ultra); filtrová příprava je vedlejší větev s jednodušším záznamem.
@@ -211,4 +212,15 @@ model Settings {
   baseGrindClicks    Int   @default(3)
 
   updatedAt DateTime @updatedAt
+}
+
+// Ochrana přihlašovacího PINu proti hádání. PIN samotný v databázi ani
+// v repozitáři NENÍ (žije jen v proměnné prostředí APP_PIN) — tady se
+// drží jen počet chybných pokusů po sobě a případný zámek. Jeden řádek,
+// stejně jako Settings: appka má jediného uživatele, takže počítadlo je
+// záměrně globální (útočník si ho neobejde střídáním IP adres).
+model LoginThrottle {
+  id             String    @id @default("singleton")
+  failedAttempts Int       @default(0)
+  lockedUntil    DateTime?
 }

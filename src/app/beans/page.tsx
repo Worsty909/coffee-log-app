@@ -1,13 +1,31 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { processLabels, roastLevelLabels } from "@/lib/validation/bean";
+import { getFreshness } from "@/lib/freshness";
+import { BeanList, type BeanListItem } from "@/components/beans/BeanList";
 
 export const dynamic = "force-dynamic";
 
 export default async function BeansPage() {
   const beans = await prisma.bean.findMany({
     orderBy: { createdAt: "desc" },
-    include: { _count: { select: { recipes: true } } },
+    include: { recipes: { select: { rating: true } } },
+  });
+
+  const items: BeanListItem[] = beans.map((bean) => {
+    const ratings = bean.recipes.flatMap((recipe) => (recipe.rating === null ? [] : [recipe.rating]));
+    const freshness = getFreshness(bean.roastDate);
+    return {
+      id: bean.id,
+      coffeeName: bean.coffeeName,
+      roaster: bean.roaster,
+      origin: `${bean.originCountry}${bean.region ? `, ${bean.region}` : ""}`,
+      process: processLabels[bean.process],
+      roastLevel: bean.roastLevel ? roastLevelLabels[bean.roastLevel] : null,
+      recipeCount: bean.recipes.length,
+      bestRating: ratings.length > 0 ? Math.max(...ratings) : null,
+      roastAge: freshness ? `praženo ${freshness.ageLabel}` : null,
+    };
   });
 
   return (
@@ -22,33 +40,12 @@ export default async function BeansPage() {
         </Link>
       </header>
 
-      {beans.length === 0 ? (
+      {items.length === 0 ? (
         <p className="rounded-xl border border-dashed border-stone-800 p-6 text-center text-sm text-stone-500">
           Zatím tu nic není. Přidej první zrnko tlačítkem výše.
         </p>
       ) : (
-        <ul className="space-y-2">
-          {beans.map((bean) => (
-            <li key={bean.id}>
-              <Link
-                href={`/beans/${bean.id}`}
-                className="flex items-center justify-between gap-4 rounded-xl border border-stone-800 bg-stone-900/60 px-4 py-3 transition hover:border-stone-700"
-              >
-                <div className="min-w-0">
-                  <p className="truncate font-medium text-stone-100">{bean.coffeeName}</p>
-                  <p className="mt-0.5 truncate text-xs text-stone-500">
-                    {bean.roaster} · {bean.originCountry}
-                    {bean.region ? `, ${bean.region}` : ""} · {processLabels[bean.process]}
-                    {bean.roastLevel ? ` · ${roastLevelLabels[bean.roastLevel]}` : ""}
-                  </p>
-                </div>
-                <span className="shrink-0 text-xs tabular-nums text-stone-500">
-                  {bean._count.recipes}×
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <BeanList beans={items} />
       )}
     </div>
   );

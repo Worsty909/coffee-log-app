@@ -13,6 +13,9 @@ const NAV = [
 export function NavLinks() {
   const pathname = usePathname();
 
+  // Na přihlašovací stránce navigace není — bez PINu stejně nikam nevede.
+  if (pathname === "/login") return null;
+
   return (
     <>
       {NAV.map((item) => {

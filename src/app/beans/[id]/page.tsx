@@ -7,6 +7,7 @@ import { DeleteBeanButton } from "@/components/beans/DeleteBeanButton";
 import { RatingDisplay } from "@/components/beans/RatingDisplay";
 import { RecipeHistoryList } from "@/components/beans/RecipeHistoryList";
 import { getAdvice } from "@/lib/recommendation";
+import { getFreshness } from "@/lib/freshness";
 
 export const dynamic = "force-dynamic";
 
@@ -32,10 +33,11 @@ export default async function BeanDetailPage({
   });
 
   const advice = getAdvice(recipes);
+  const freshness = getFreshness(bean.roastDate);
 
   return (
     <div className="space-y-6">
-      <header className="flex items-start justify-between gap-4">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div>
           <p className="text-sm text-stone-500">{bean.roaster}</p>
           <h1 className="text-2xl font-semibold text-stone-100">{bean.coffeeName}</h1>
@@ -75,7 +77,13 @@ export default async function BeanDetailPage({
         />
         <Info
           label="Datum pražení"
-          value={bean.roastDate ? bean.roastDate.toLocaleDateString("cs-CZ") : "neuvedeno"}
+          value={
+            bean.roastDate
+              ? `${bean.roastDate.toLocaleDateString("cs-CZ", { timeZone: "UTC" })}${
+                  freshness ? ` · ${freshness.ageLabel}, ${freshness.stageLabel}` : ""
+                }`
+              : "neuvedeno"
+          }
         />
       </dl>
 

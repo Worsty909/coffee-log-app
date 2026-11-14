@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { SETTINGS_ID } from "@/lib/settings";
+import { requireAuth } from "@/lib/auth/server";
+import { describeActionError } from "./errors";
 import { commaToDot } from "@/lib/validation/number";
 
 export type SettingsFormState = {
@@ -34,6 +36,7 @@ export async function updateSettings(
   _prevState: SettingsFormState,
   formData: FormData,
 ): Promise<SettingsFormState> {
+  await requireAuth();
   try {
     const data = settingsSchema.parse(Object.fromEntries(formData));
     await prisma.settings.upsert({
@@ -42,12 +45,7 @@ export async function updateSettings(
       create: { id: SETTINGS_ID, ...data },
     });
   } catch (error) {
-    if (error && typeof error === "object" && "issues" in error) {
-      const zodError = error as { issues: { message: string }[] };
-      return { error: zodError.issues[0]?.message ?? "Neplatná data.", saved: false };
-    }
-    console.error(error);
-    return { error: "Něco se nepovedlo. Zkus to prosím znovu.", saved: false };
+    return { error: describeActionError(error), saved: false };
   }
 
   revalidatePath("/settings");
