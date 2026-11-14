@@ -58,12 +58,3 @@ export const recipeInputSchema = z
   }));
 
 export type RecipeInput = z.infer<typeof recipeInputSchema>;
-
-export const customMethodSchema = z.object({
-  name: z.string().trim().min(1, "Zadej název metody"),
-  // Bez omezení na krok — poměr může být libovolně jemný (2,777).
-  defaultRatio: z.preprocess(
-    commaToDot,
-    z.coerce.number().positive("Poměr musí být kladné číslo"),
-  ),
-});

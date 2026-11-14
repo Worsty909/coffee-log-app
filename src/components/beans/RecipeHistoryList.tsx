@@ -6,6 +6,7 @@ import { DeleteRecipeButton } from "./DeleteRecipeButton";
 
 type RecipeListItem = {
   id: string;
+  beanId: string;
   ratio: number;
   doseGrams: number;
   yieldGrams: number;
@@ -43,6 +44,14 @@ export function RecipeHistoryList({ recipes }: { recipes: RecipeListItem[] }) {
     );
   }
 
+  // Nejlíp hodnocený pokus (při shodě ten novější) — má smysl ho
+  // vyznačit, až když je s čím srovnávat.
+  const rated = recipes.filter((recipe) => recipe.rating !== null);
+  const bestId =
+    rated.length >= 2
+      ? rated.reduce((best, recipe) => (recipe.rating! > best.rating! ? recipe : best)).id
+      : null;
+
   return (
     <ul className="space-y-2">
       {recipes.map((recipe, index) => {
@@ -56,10 +65,18 @@ export function RecipeHistoryList({ recipes }: { recipes: RecipeListItem[] }) {
           grind && previousGrind ? describeGrindDelta(previousGrind, grind) : null;
 
         return (
-          <li key={recipe.id} className="rounded-xl border border-stone-800 bg-stone-900/60 p-4">
+          <li
+            key={recipe.id}
+            className={`rounded-xl border bg-stone-900/60 p-4 ${
+              recipe.id === bestId ? "border-amber-800/70" : "border-stone-800"
+            }`}
+          >
             <div className="flex items-baseline justify-between gap-2">
               <p className="text-sm font-medium text-stone-100">
                 {recipe.profile?.name ?? recipe.method.name}
+                {recipe.id === bestId && (
+                  <span className="ml-2 text-xs font-normal text-amber-400">★ nejlepší</span>
+                )}
               </p>
               <div className="flex shrink-0 items-center gap-2">
                 {recipe.rating && (
@@ -67,13 +84,6 @@ export function RecipeHistoryList({ recipes }: { recipes: RecipeListItem[] }) {
                     {recipe.rating}/5
                   </span>
                 )}
-                <Link
-                  href={`/recipes/${recipe.id}/edit`}
-                  className="text-xs text-stone-500 hover:text-stone-300 hover:underline"
-                >
-                  Upravit
-                </Link>
-                <DeleteRecipeButton action={deleteRecipe.bind(null, recipe.id)} />
               </div>
             </div>
 
@@ -105,9 +115,28 @@ export function RecipeHistoryList({ recipes }: { recipes: RecipeListItem[] }) {
 
             {recipe.notes && <p className="mt-2 text-sm text-stone-300">{recipe.notes}</p>}
 
-            <p className="mt-2 text-xs text-stone-600">
-              {recipe.brewedAt.toLocaleString("cs-CZ", { timeZone: "Europe/Prague" })}
-            </p>
+            {/* Datum a akce na společném řádku dole — nahoře by se na mobilu
+                tloukly s názvem receptu. */}
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+              <p className="text-xs text-stone-600">
+                {recipe.brewedAt.toLocaleString("cs-CZ", { timeZone: "Europe/Prague" })}
+              </p>
+              <div className="flex items-center gap-3">
+                <Link
+                  href={`/brew/new?beanId=${recipe.beanId}&recipeId=${recipe.id}`}
+                  className="text-xs text-amber-500 hover:underline"
+                >
+                  Zopakovat
+                </Link>
+                <Link
+                  href={`/recipes/${recipe.id}/edit`}
+                  className="text-xs text-stone-500 hover:text-stone-300 hover:underline"
+                >
+                  Upravit
+                </Link>
+                <DeleteRecipeButton action={deleteRecipe.bind(null, recipe.id)} />
+              </div>
+            </div>
           </li>
         );
       })}

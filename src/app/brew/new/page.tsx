@@ -11,9 +11,9 @@ export const dynamic = "force-dynamic";
 export default async function NewBrewPage({
   searchParams,
 }: {
-  searchParams: Promise<{ beanId?: string }>;
+  searchParams: Promise<{ beanId?: string; recipeId?: string }>;
 }) {
-  const { beanId } = await searchParams;
+  const { beanId, recipeId } = await searchParams;
 
   const [methods, profiles, beans, settings, lastRecipe] = await Promise.all([
     prisma.brewMethod.findMany({ orderBy: { sortOrder: "asc" } }),
@@ -26,7 +26,14 @@ export default async function NewBrewPage({
       select: { id: true, roaster: true, coffeeName: true },
     }),
     getSettings(),
-    beanId ? prisma.recipe.findFirst({ where: { beanId }, orderBy: { brewedAt: "desc" } }) : null,
+    // Výchozí bod nového pokusu: buď konkrétní recept z historie
+    // ("Zopakovat"), nebo poslední příprava tohohle zrnka.
+    beanId
+      ? prisma.recipe.findFirst({
+          where: recipeId ? { id: recipeId, beanId } : { beanId },
+          orderBy: { brewedAt: "desc" },
+        })
+      : null,
   ]);
 
   const bean = beanId ? beans.find((item) => item.id === beanId) : null;
@@ -60,7 +67,10 @@ export default async function NewBrewPage({
             <Link href={`/beans/${bean.id}`} className="text-amber-500 hover:underline">
               {bean.roaster} — {bean.coffeeName}
             </Link>
-            {prefill && " · předvyplněno z posledního receptu"}
+            {prefill &&
+              (recipeId
+                ? " · předvyplněno z vybraného receptu"
+                : " · předvyplněno z posledního receptu")}
           </p>
         ) : (
           <p className="mt-1 text-sm text-stone-500">Vyber zrnko a nastav přípravu.</p>

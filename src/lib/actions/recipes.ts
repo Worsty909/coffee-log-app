@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { recipeInputSchema } from "@/lib/validation/recipe";
+import { requireAuth } from "@/lib/auth/server";
+import { describeActionError } from "./errors";
 import { getSettings } from "@/lib/settings";
 
 export type RecipeFormState = {
@@ -14,6 +16,7 @@ export async function createRecipe(
   _prevState: RecipeFormState,
   formData: FormData,
 ): Promise<RecipeFormState> {
+  await requireAuth();
   let beanId: string;
   try {
     const data = recipeInputSchema.parse(Object.fromEntries(formData));
@@ -31,7 +34,7 @@ export async function createRecipe(
     });
     beanId = recipe.beanId;
   } catch (error) {
-    return { error: describeError(error) };
+    return { error: describeActionError(error) };
   }
 
   revalidatePath(`/beans/${beanId}`);
@@ -43,6 +46,7 @@ export async function updateRecipe(
   _prevState: RecipeFormState,
   formData: FormData,
 ): Promise<RecipeFormState> {
+  await requireAuth();
   let beanId: string;
   try {
     const data = recipeInputSchema.parse(Object.fromEntries(formData));
@@ -52,7 +56,7 @@ export async function updateRecipe(
     const recipe = await prisma.recipe.update({ where: { id: recipeId }, data });
     beanId = recipe.beanId;
   } catch (error) {
-    return { error: describeError(error) };
+    return { error: describeActionError(error) };
   }
 
   revalidatePath(`/beans/${beanId}`);
@@ -60,16 +64,8 @@ export async function updateRecipe(
 }
 
 export async function deleteRecipe(recipeId: string): Promise<void> {
+  await requireAuth();
   const recipe = await prisma.recipe.delete({ where: { id: recipeId } });
   revalidatePath(`/beans/${recipe.beanId}`);
   redirect(`/beans/${recipe.beanId}`);
-}
-
-function describeError(error: unknown): string {
-  if (error && typeof error === "object" && "issues" in error) {
-    const zodError = error as { issues: { message: string }[] };
-    return zodError.issues[0]?.message ?? "Neplatná data formuláře.";
-  }
-  console.error(error);
-  return "Něco se nepovedlo. Zkus to prosím znovu.";
 }
