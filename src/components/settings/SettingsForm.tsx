@@ -22,17 +22,17 @@ export function SettingsForm({ settings }: SettingsFormProps) {
 
   return (
     <form action={formAction} className="space-y-5">
-      <section className="space-y-4 rounded-xl border border-stone-800 bg-stone-900/60 p-4">
-        <h2 className="text-sm font-semibold text-stone-200">Vybavení</h2>
+      <section className="space-y-4 card p-4">
+        <h2 className="section-title">Vybavení</h2>
         <TextField label="Kávovar" name="brewerName" defaultValue={settings.brewerName} />
         <TextField label="Mlýnek" name="grinderName" defaultValue={settings.grinderName} />
         <TextField label="Filtrační koš" name="basketName" defaultValue={settings.basketName} />
         <TextField label="Puck screen" name="screenName" defaultValue={settings.screenName} />
       </section>
 
-      <section className="space-y-4 rounded-xl border border-stone-800 bg-stone-900/60 p-4">
+      <section className="space-y-4 card p-4">
         <div>
-          <h2 className="text-sm font-semibold text-stone-200">Výchozí hodnoty</h2>
+          <h2 className="section-title">Výchozí hodnoty</h2>
           <p className="mt-1 text-xs text-stone-500">
             Od běžného nastavení mlýnku se odvozují doporučené posuny jednotlivých profilů
             (turbo shot hrubší, klasika beze změny).
@@ -59,7 +59,7 @@ export function SettingsForm({ settings }: SettingsFormProps) {
         </div>
       </section>
 
-      {state.error && <p className="text-sm text-red-400">{state.error}</p>}
+      {state.error && <p className="alert-error">{state.error}</p>}
       {state.saved && !state.error && <p className="text-sm text-emerald-400">Uloženo.</p>}
 
       <SubmitButton />
@@ -73,7 +73,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="rounded-lg bg-amber-700 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600 disabled:opacity-50"
+      className="btn btn-primary"
     >
       {pending ? "Ukládám…" : "Uložit nastavení"}
     </button>
@@ -91,7 +91,7 @@ function TextField({
 }) {
   return (
     <div>
-      <label htmlFor={name} className="block text-sm font-medium text-stone-300">
+      <label htmlFor={name} className="label">
         {label}
       </label>
       <input
@@ -100,7 +100,7 @@ function TextField({
         type="text"
         autoComplete="off"
         defaultValue={defaultValue}
-        className="mt-1 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 outline-none focus:border-amber-600"
+        className="mt-1 input"
       />
     </div>
   );
@@ -131,7 +131,7 @@ function GrindPart({
         autoComplete="off"
         maxLength={1}
         defaultValue={String(defaultValue)}
-        className="mt-1 w-14 rounded-lg border border-stone-700 bg-stone-900 py-2 text-center text-lg tabular-nums text-stone-100 outline-none focus:border-amber-600"
+        className="input mt-1 w-14 px-0 text-center text-xl font-medium tabular-nums sm:text-xl"
       />
     </div>
   );

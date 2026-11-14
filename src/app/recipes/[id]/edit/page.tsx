@@ -58,7 +58,7 @@ export default async function EditRecipePage({
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-2xl font-semibold text-stone-100">Upravit recept</h1>
+        <h1 className="page-title">Upravit recept</h1>
         <p className="mt-1 text-sm text-stone-400">
           <Link href={`/beans/${recipe.bean.id}`} className="text-amber-500 hover:underline">
             {recipe.bean.roaster} — {recipe.bean.coffeeName}

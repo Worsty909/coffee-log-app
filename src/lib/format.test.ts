@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { durationToInput, formatSeconds, parseDuration } from "./format";
+import { durationToInput, formatSeconds, normalizeDurationInput, parseDuration } from "./format";
 
 describe("parseDuration", () => {
   it("bere holé sekundy (typické pro espresso)", () => {
@@ -48,5 +48,28 @@ describe("formatSeconds", () => {
   it("doplní nulu k sekundám", () => {
     expect(formatSeconds(65)).toBe("1:05");
     expect(formatSeconds(0)).toBe("0:00");
+  });
+});
+
+describe("čas z číselné klávesnice bez dvojtečky", () => {
+  it("čárku i tečku bere jako dvojtečku", () => {
+    expect(parseDuration("2,30")).toBe(150);
+    expect(parseDuration("2.30")).toBe(150);
+    expect(parseDuration("1,5")).toBe(65);
+    expect(parseDuration("0,45")).toBe(45);
+  });
+
+  it("neplatné sekundy pořád odmítne", () => {
+    expect(parseDuration("2,75")).toBeNull();
+    expect(parseDuration("1,2,3")).toBeNull();
+  });
+
+  it("při psaní přepisuje oddělovač na dvojtečku", () => {
+    expect(normalizeDurationInput("2,")).toBe("2:");
+    expect(normalizeDurationInput("2,30")).toBe("2:30");
+    expect(normalizeDurationInput("2.30")).toBe("2:30");
+    expect(normalizeDurationInput("2::3")).toBe("2:3");
+    expect(normalizeDurationInput("32")).toBe("32");
+    expect(normalizeDurationInput("3x2 s")).toBe("32");
   });
 });

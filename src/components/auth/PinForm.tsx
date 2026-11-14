@@ -48,7 +48,7 @@ export function PinForm({ next }: { next: string }) {
         maxLength={MAX_LENGTH}
         value={pin}
         onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, MAX_LENGTH))}
-        className="w-full rounded-xl border border-stone-700 bg-stone-900 px-3 py-3 text-center font-mono text-2xl tracking-[0.5em] text-stone-100 outline-none focus:border-amber-600"
+        className="input py-3 text-center font-mono text-2xl tracking-[0.5em] sm:py-3 sm:text-2xl"
       />
 
       <p role="alert" aria-live="polite" className="mt-3 min-h-10 text-sm text-red-400">
@@ -68,7 +68,7 @@ export function PinForm({ next }: { next: string }) {
         <button
           type="submit"
           disabled={pending || pin.length === 0}
-          className="rounded-xl bg-amber-700 py-4 text-sm font-medium text-white transition hover:bg-amber-600 disabled:opacity-40"
+          className="btn btn-primary py-4"
         >
           {pending ? "…" : "Odemknout"}
         </button>
@@ -93,7 +93,7 @@ function PadKey({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className={`rounded-xl border border-stone-800 bg-stone-900/60 py-4 text-xl tabular-nums transition hover:border-stone-700 active:bg-stone-800 ${
+      className={`card py-4 text-xl tabular-nums transition hover:border-line-strong active:scale-95 active:bg-surface-raised ${
         muted ? "text-stone-400" : "text-stone-100"
       }`}
     >

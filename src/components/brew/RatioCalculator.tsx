@@ -24,9 +24,9 @@ export function RatioCalculator({
   labels,
 }: RatioCalculatorProps) {
   return (
-    <section className="rounded-xl border border-stone-800 bg-stone-900/60 p-4">
+    <section className="card p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-sm font-semibold text-stone-200">Poměr</h2>
+        <h2 className="section-title">Poměr</h2>
         <p className="text-xs text-stone-500">
           Vyplň dvě hodnoty, třetí appka dopočítá.
         </p>
@@ -51,8 +51,8 @@ export function RatioCalculator({
               disabled={derived === field}
               className={`mt-1.5 w-full rounded-md px-2 py-1 text-xs transition ${
                 derived === field
-                  ? "bg-amber-900/40 font-medium text-amber-300"
-                  : "text-stone-500 hover:bg-stone-800 hover:text-stone-300"
+                  ? "bg-amber-500/12 font-medium text-amber-300"
+                  : "text-stone-500 hover:bg-white/[0.05] hover:text-stone-300"
               }`}
             >
               {derived === field ? "dopočítává se" : "dopočítat"}

@@ -19,7 +19,7 @@ export default async function EditBeanPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-stone-100">
+      <h1 className="page-title">
         Upravit zrnko — {bean.coffeeName}
       </h1>
       <BeanForm action={updateBean.bind(null, bean.id)} initialValues={bean} submitLabel="Uložit změny" />

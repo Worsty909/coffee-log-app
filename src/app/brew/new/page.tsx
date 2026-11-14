@@ -61,7 +61,7 @@ export default async function NewBrewPage({
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-2xl font-semibold text-stone-100">Příprava</h1>
+        <h1 className="page-title">Příprava</h1>
         {bean ? (
           <p className="mt-1 text-sm text-stone-400">
             <Link href={`/beans/${bean.id}`} className="text-amber-500 hover:underline">

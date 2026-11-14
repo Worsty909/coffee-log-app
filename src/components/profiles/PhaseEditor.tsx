@@ -1,10 +1,12 @@
 "use client";
 
+import { normalizeDurationInput } from "@/lib/format";
+
 // Editor fází receptu — přidávání, mazání a přeřazování řádků. Tlaková
 // pole (bar) se zobrazují jen pro espresso recepty; u filtru fáze mají
 // jen název, délku a volitelnou poznámku.
 const inputClass =
-  "w-full rounded-lg border border-stone-700 bg-stone-900 px-2 py-1.5 text-sm text-stone-100 outline-none focus:border-amber-600";
+  "input";
 
 export type PhaseDraft = {
   label: string;
@@ -42,9 +44,9 @@ export function PhaseEditor({ phases, onChange, showPressure }: PhaseEditorProps
   }
 
   return (
-    <section className="rounded-xl border border-stone-800 bg-stone-900/60 p-4">
+    <section className="card p-4">
       <div className="flex items-baseline justify-between gap-2">
-        <h2 className="text-sm font-semibold text-stone-200">Fáze časovače</h2>
+        <h2 className="section-title">Fáze časovače</h2>
         <p className="text-xs text-stone-500">Appka tě jimi provede při vaření.</p>
       </div>
 
@@ -103,9 +105,12 @@ export function PhaseEditor({ phases, onChange, showPressure }: PhaseEditorProps
                 <label className="block text-xs text-stone-500">Délka</label>
                 <input
                   type="text"
-                  inputMode="text"
+                  inputMode="decimal"
                   value={phase.durationSeconds}
-                  onChange={(e) => update(index, { durationSeconds: e.target.value })}
+                  onChange={(e) =>
+                    // Číselná klávesnice nemá dvojtečku — čárka/tečka ji zastoupí.
+                    update(index, { durationSeconds: normalizeDurationInput(e.target.value) })
+                  }
                   placeholder="30 nebo 1:30"
                   className={`mt-1 ${inputClass}`}
                 />
@@ -153,7 +158,7 @@ export function PhaseEditor({ phases, onChange, showPressure }: PhaseEditorProps
       <button
         type="button"
         onClick={() => onChange([...phases, emptyPhase()])}
-        className="mt-3 rounded-lg border border-stone-700 px-3 py-1.5 text-sm text-stone-300 hover:bg-stone-800"
+        className="mt-3 btn btn-sm btn-secondary"
       >
         + Přidat fázi
       </button>

@@ -9,8 +9,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Osobní deník ochutnávek kávy a kalkulačka poměrů/extrakce.",
     start_url: "/",
     display: "standalone",
-    background_color: "#0c0a09",
-    theme_color: "#1c1917",
+    background_color: "#110e0c",
+    theme_color: "#110e0c",
     icons: [{ src: "/icon", sizes: "512x512", type: "image/png" }],
   };
 }

@@ -38,7 +38,7 @@ function grindOf(recipe: RecipeListItem): GrindSetting | null {
 export function RecipeHistoryList({ recipes }: { recipes: RecipeListItem[] }) {
   if (recipes.length === 0) {
     return (
-      <p className="rounded-xl border border-dashed border-stone-800 p-6 text-center text-sm text-stone-500">
+      <p className="empty">
         Zatím žádný recept. Přidej ho tlačítkem „Připravit“ výše.
       </p>
     );
@@ -80,7 +80,7 @@ export function RecipeHistoryList({ recipes }: { recipes: RecipeListItem[] }) {
               </p>
               <div className="flex shrink-0 items-center gap-2">
                 {recipe.rating && (
-                  <span className="rounded-full bg-amber-900/40 px-2 py-0.5 text-xs font-medium text-amber-300">
+                  <span className="chip">
                     {recipe.rating}/5
                   </span>
                 )}

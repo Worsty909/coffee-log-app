@@ -51,12 +51,12 @@ export function BeanList({ beans }: { beans: BeanListItem[] }) {
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Hledat podle názvu, pražírny, původu…"
           aria-label="Hledat v zrnkách"
-          className="w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 outline-none placeholder:text-stone-600 focus:border-amber-600"
+          className="input"
         />
       )}
 
       {visible.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-stone-800 p-6 text-center text-sm text-stone-500">
+        <p className="empty">
           Nic neodpovídá hledání „{query}“.
         </p>
       ) : (
@@ -65,9 +65,16 @@ export function BeanList({ beans }: { beans: BeanListItem[] }) {
             <li key={bean.id}>
               <Link
                 href={`/beans/${bean.id}`}
-                className="flex items-center justify-between gap-4 rounded-xl border border-stone-800 bg-stone-900/60 px-4 py-3 transition hover:border-stone-700"
+                className="card flex items-center gap-3 p-3"
               >
-                <div className="min-w-0">
+                {/* Monogram pražírny — rychlá vizuální kotva v seznamu. */}
+                <span
+                  aria-hidden="true"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-amber-500/25 to-amber-900/20 font-display text-lg font-semibold text-amber-300"
+                >
+                  {bean.roaster.trim().charAt(0).toUpperCase()}
+                </span>
+                <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-stone-100">{bean.coffeeName}</p>
                   <p className="mt-0.5 truncate text-xs text-stone-500">
                     {bean.roaster} · {bean.origin} · {bean.process}
@@ -77,10 +84,7 @@ export function BeanList({ beans }: { beans: BeanListItem[] }) {
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   {bean.bestRating !== null && (
-                    <span
-                      className="rounded-full bg-amber-900/40 px-2 py-0.5 text-xs text-amber-300"
-                      title="Nejlepší hodnocení šálku"
-                    >
+                    <span className="chip" title="Nejlepší hodnocení šálku">
                       {bean.bestRating}/5
                     </span>
                   )}

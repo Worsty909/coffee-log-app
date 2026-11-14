@@ -31,17 +31,17 @@ export default async function BeansPage() {
   return (
     <div className="space-y-5">
       <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-stone-100">Zrnka</h1>
+        <h1 className="page-title">Zrnka</h1>
         <Link
           href="/beans/new"
-          className="rounded-lg bg-amber-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-600"
+          className="btn btn-sm btn-primary"
         >
           + Nové zrnko
         </Link>
       </header>
 
       {items.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-stone-800 p-6 text-center text-sm text-stone-500">
+        <p className="empty">
           Zatím tu nic není. Přidej první zrnko tlačítkem výše.
         </p>
       ) : (

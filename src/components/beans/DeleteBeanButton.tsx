@@ -14,7 +14,7 @@ export function DeleteBeanButton({ action }: { action: () => Promise<void> }) {
     >
       <button
         type="submit"
-        className="rounded-lg border border-red-900 px-3 py-1.5 text-sm text-red-400 transition hover:bg-red-950"
+        className="btn btn-sm btn-danger"
       >
         Smazat
       </button>

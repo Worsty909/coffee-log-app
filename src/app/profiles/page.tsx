@@ -21,14 +21,14 @@ export default async function ProfilesPage() {
     <div className="space-y-6">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-stone-100">Recepty</h1>
+          <h1 className="page-title">Recepty</h1>
           <p className="mt-1 text-sm text-stone-500">
             Recept je pojmenovaná sada fází časovače — poměr, mletí a průběh přípravy na jedno kliknutí.
           </p>
         </div>
         <Link
           href="/profiles/new"
-          className="shrink-0 rounded-lg bg-amber-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-600"
+          className="shrink-0 btn btn-sm btn-primary"
         >
           + Nový recept
         </Link>
@@ -51,7 +51,7 @@ export default async function ProfilesPage() {
                 return (
                   <li
                     key={profile.id}
-                    className="rounded-xl border border-stone-800 bg-stone-900/60 p-4"
+                    className="card p-4"
                   >
                     <div className="flex items-baseline justify-between gap-2">
                       <p className="text-sm font-medium text-stone-100">{profile.name}</p>

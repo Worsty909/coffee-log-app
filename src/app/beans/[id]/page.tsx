@@ -39,19 +39,19 @@ export default async function BeanDetailPage({
     <div className="space-y-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div>
-          <p className="text-sm text-stone-500">{bean.roaster}</p>
-          <h1 className="text-2xl font-semibold text-stone-100">{bean.coffeeName}</h1>
+          <p className="eyebrow text-amber-500/80">{bean.roaster}</p>
+          <h1 className="page-title">{bean.coffeeName}</h1>
         </div>
         <div className="flex shrink-0 gap-2">
           <Link
             href={`/brew/new?beanId=${bean.id}`}
-            className="rounded-lg bg-amber-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-600"
+            className="btn btn-sm btn-primary"
           >
             Připravit
           </Link>
           <Link
             href={`/beans/${bean.id}/edit`}
-            className="rounded-lg border border-stone-700 px-3 py-1.5 text-sm text-stone-300 hover:bg-stone-800"
+            className="btn btn-sm btn-secondary"
           >
             Upravit
           </Link>
@@ -64,11 +64,11 @@ export default async function BeanDetailPage({
         <img
           src={bean.photoUrl}
           alt={`Fotka štítku – ${bean.coffeeName}`}
-          className="h-40 w-40 rounded-xl object-cover"
+          className="h-40 w-40 rounded-2xl border border-line object-cover"
         />
       )}
 
-      <dl className="grid gap-4 sm:grid-cols-2">
+      <dl className="card grid grid-cols-2 gap-4 p-4">
         <Info label="Původ" value={`${bean.originCountry}${bean.region ? `, ${bean.region}` : ""}`} />
         <Info label="Zpracování" value={processLabels[bean.process]} />
         <Info
@@ -87,7 +87,7 @@ export default async function BeanDetailPage({
         />
       </dl>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="card grid grid-cols-2 gap-4 p-4">
         <RatingDisplay label="Sladkost" value={bean.sweetness} />
         <RatingDisplay label="Kyselost" value={bean.acidity} />
         <RatingDisplay label="Tělo" value={bean.body} />
@@ -96,7 +96,7 @@ export default async function BeanDetailPage({
 
       {bean.notes && (
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-stone-500">Poznámky</p>
+          <p className="eyebrow">Poznámky</p>
           <p className="mt-1 whitespace-pre-wrap text-sm text-stone-300">{bean.notes}</p>
         </div>
       )}
@@ -106,7 +106,7 @@ export default async function BeanDetailPage({
           {advice.map((item, index) => (
             <p
               key={index}
-              className="rounded-xl border border-amber-900/60 bg-amber-950/30 px-4 py-3 text-sm text-amber-200"
+              className="rounded-2xl border border-amber-500/25 bg-amber-500/8 px-4 py-3 text-sm leading-relaxed text-amber-100"
             >
               {item.text}
             </p>
@@ -115,7 +115,7 @@ export default async function BeanDetailPage({
       )}
 
       <section>
-        <h2 className="text-sm font-semibold text-stone-200">
+        <h2 className="section-title">
           Historie receptů{recipes.length > 0 && ` (${recipes.length})`}
         </h2>
         <div className="mt-3">
@@ -129,7 +129,7 @@ export default async function BeanDetailPage({
 function Info({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-stone-500">{label}</dt>
+      <dt className="eyebrow">{label}</dt>
       <dd className="mt-1 text-sm text-stone-200">{value}</dd>
     </div>
   );
