@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getAuthConfig } from "@/lib/auth/config";
 import { safeNextPath } from "@/lib/auth/session";
+import { CupIcon } from "@/components/ui/icons";
 import { PinForm } from "@/components/auth/PinForm";
 
 export const metadata: Metadata = { title: "Přihlášení — Coffee Log" };
@@ -17,8 +18,11 @@ export default async function LoginPage({
   const configured = getAuthConfig() !== null;
 
   return (
-    <div className="mx-auto flex max-w-xs flex-col items-center pt-10 text-center">
-      <h1 className="text-2xl font-semibold text-stone-100">Coffee Log</h1>
+    <div className="mx-auto flex max-w-xs flex-col items-center pt-6 text-center">
+      <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-b from-amber-500 to-amber-700 text-white shadow-xl shadow-amber-900/40">
+        <CupIcon className="h-9 w-9" />
+      </span>
+      <h1 className="page-title mt-4">Coffee Log</h1>
 
       {configured ? (
         <>

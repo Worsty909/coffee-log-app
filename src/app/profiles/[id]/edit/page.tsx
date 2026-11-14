@@ -27,7 +27,7 @@ export default async function EditProfilePage({
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-2xl font-semibold text-stone-100">Upravit recept — {profile.name}</h1>
+        <h1 className="page-title">Upravit recept — {profile.name}</h1>
       </header>
 
       <ProfileForm

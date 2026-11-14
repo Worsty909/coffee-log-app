@@ -53,7 +53,7 @@ function toDateInputValue(date: Date | null): string {
 }
 
 const inputClass =
-  "mt-1 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 outline-none focus:border-amber-600";
+  "mt-1 input";
 
 export function BeanForm({ action, initialValues, submitLabel }: BeanFormProps) {
   const values = initialValues ?? emptyValues;
@@ -68,7 +68,7 @@ export function BeanForm({ action, initialValues, submitLabel }: BeanFormProps) 
         <Field label="Region (nepovinné)" name="region" defaultValue={values.region ?? ""} />
 
         <div>
-          <label htmlFor="process" className="block text-sm font-medium text-stone-300">
+          <label htmlFor="process" className="label">
             Zpracování
           </label>
           <select id="process" name="process" defaultValue={values.process} className={inputClass}>
@@ -81,7 +81,7 @@ export function BeanForm({ action, initialValues, submitLabel }: BeanFormProps) 
         </div>
 
         <div>
-          <label htmlFor="roastLevel" className="block text-sm font-medium text-stone-300">
+          <label htmlFor="roastLevel" className="label">
             Stupeň pražení
           </label>
           <select
@@ -115,7 +115,7 @@ export function BeanForm({ action, initialValues, submitLabel }: BeanFormProps) 
       </div>
 
       <div>
-        <label htmlFor="notes" className="block text-sm font-medium text-stone-300">
+        <label htmlFor="notes" className="label">
           Poznámky
         </label>
         <textarea
@@ -128,7 +128,7 @@ export function BeanForm({ action, initialValues, submitLabel }: BeanFormProps) 
       </div>
 
       <div>
-        <label htmlFor="photo" className="block text-sm font-medium text-stone-300">
+        <label htmlFor="photo" className="label">
           Fotka štítku (nepovinné)
         </label>
         {values.photoUrl && (
@@ -148,7 +148,7 @@ export function BeanForm({ action, initialValues, submitLabel }: BeanFormProps) 
         />
       </div>
 
-      {state.error && <p className="text-sm text-red-400">{state.error}</p>}
+      {state.error && <p className="alert-error">{state.error}</p>}
 
       <SubmitButton label={submitLabel} />
     </form>
@@ -161,7 +161,7 @@ function SubmitButton({ label }: { label: string }) {
     <button
       type="submit"
       disabled={pending}
-      className="rounded-lg bg-amber-700 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600 disabled:opacity-50"
+      className="btn btn-primary"
     >
       {pending ? "Ukládám…" : label}
     </button>
@@ -183,7 +183,7 @@ function Field({
 }) {
   return (
     <div>
-      <label htmlFor={name} className="block text-sm font-medium text-stone-300">
+      <label htmlFor={name} className="label">
         {label}
       </label>
       <input

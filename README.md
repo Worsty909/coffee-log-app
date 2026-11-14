@@ -50,8 +50,12 @@ instalovaná appka.
   Seznam zrnek jde prohledávat (od šesti zrnek výš) a ukazuje nejlepší
   dosažené hodnocení.
 - **Časovač** měří podle hodin (nezpožďuje se na pozadí), během měření
-  nenechá zhasnout displej a při přechodu fáze zavibruje (kde to
-  prohlížeč umí).
+  nenechá zhasnout displej a přechod fáze ohlásí pípnutím, probliknutím
+  a na Androidu i vibrací. iPhone webovým appkám vibrace nedovoluje,
+  proto je hlavním signálem zvuk (jde vypnout ikonou u časovače).
+- **Časy** jdou psát jako sekundy (`32`) i jako `mm:ss` (`2:45`). Číselná
+  klávesnice na mobilu dvojtečku nemá, takže ji zastoupí čárka nebo
+  tečka — `2,45` se při psaní samo přepíše na `2:45`.
 - **Doporučení** (heuristika, ne strojové učení): porovná naměřený čas
   s plánem profilu a navrhne konkrétní nastavení mlýnku; při třech
   klesajících hodnoceních po sobě odkáže na mletí nejlíp hodnoceného

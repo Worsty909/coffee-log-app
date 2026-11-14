@@ -34,7 +34,7 @@ type ProfileFormProps = {
 };
 
 const inputClass =
-  "mt-1 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 outline-none focus:border-amber-600";
+  "mt-1 input";
 
 function toDraftPhases(values: ProfileFormValues["phases"] | undefined): PhaseDraft[] {
   if (!values || values.length === 0) return [emptyPhase()];
@@ -68,7 +68,7 @@ export function ProfileForm({
     <form action={formAction} className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-stone-300">
+          <label htmlFor="name" className="label">
             Název receptu
           </label>
           <input
@@ -80,7 +80,7 @@ export function ProfileForm({
           />
         </div>
         <div>
-          <label htmlFor="methodId" className="block text-sm font-medium text-stone-300">
+          <label htmlFor="methodId" className="label">
             Metoda přípravy
           </label>
           <select
@@ -100,7 +100,7 @@ export function ProfileForm({
       </div>
 
       <div>
-        <label htmlFor="description" className="block text-sm font-medium text-stone-300">
+        <label htmlFor="description" className="label">
           Popis (nepovinné)
         </label>
         <textarea
@@ -143,7 +143,7 @@ export function ProfileForm({
 
       <PhaseEditor phases={phases} onChange={setPhases} showPressure={showPressure} />
 
-      {state.error && <p className="text-sm text-red-400">{state.error}</p>}
+      {state.error && <p className="alert-error">{state.error}</p>}
 
       <SubmitButton label={submitLabel} />
     </form>
@@ -165,7 +165,7 @@ function TextField({
 }) {
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium text-stone-300">
+      <label htmlFor={id} className="label">
         {label}
       </label>
       <input
@@ -188,7 +188,7 @@ function SubmitButton({ label }: { label: string }) {
     <button
       type="submit"
       disabled={pending}
-      className="rounded-lg bg-amber-700 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600 disabled:opacity-50"
+      className="btn btn-primary"
     >
       {pending ? "Ukládám…" : label}
     </button>

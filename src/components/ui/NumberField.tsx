@@ -11,6 +11,7 @@
 // `inputMode="decimal"` vytáhne na mobilu numerickou klávesnici, ale
 // necháváme `type="text"`, aby prohlížeč nepřepisoval to, co uživatel
 // píše, a aby šla psát i desetinná čárka.
+import { normalizeDurationInput } from "@/lib/format";
 
 type NumberFieldProps = {
   id: string;
@@ -20,6 +21,11 @@ type NumberFieldProps = {
   onChange?: (text: string) => void;
   /** Pole se dopočítává — je jen pro čtení a vizuálně odlišené. */
   readOnly?: boolean;
+  /**
+   * Pole je čas ("32" nebo "2:45"). Číselná klávesnice dvojtečku nemá,
+   * takže se čárka/tečka při psaní rovnou přepisuje na dvojtečku.
+   */
+  duration?: boolean;
   suffix?: string;
   placeholder?: string;
   hint?: string;
@@ -32,13 +38,14 @@ export function NumberField({
   value,
   onChange,
   readOnly,
+  duration,
   suffix,
   placeholder,
   hint,
 }: NumberFieldProps) {
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium text-stone-300">
+      <label htmlFor={id} className="label">
         {label}
       </label>
       <div className="relative mt-1">
@@ -51,12 +58,10 @@ export function NumberField({
           value={value}
           readOnly={readOnly}
           placeholder={placeholder}
-          onChange={(event) => onChange?.(event.target.value)}
-          className={`w-full rounded-lg border px-3 py-2 text-sm tabular-nums outline-none transition ${
-            readOnly
-              ? "border-stone-700 bg-stone-800/60 text-amber-300"
-              : "border-stone-700 bg-stone-900 text-stone-100 focus:border-amber-600"
-          } ${suffix ? "pr-10" : ""}`}
+          onChange={(event) =>
+            onChange?.(duration ? normalizeDurationInput(event.target.value) : event.target.value)
+          }
+          className={`input tabular-nums ${suffix ? "pr-10" : ""}`}
         />
         {suffix && (
           <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-stone-500">

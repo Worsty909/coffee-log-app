@@ -14,12 +14,12 @@ const SCALE = [1, 2, 3, 4, 5];
 export function RatingInput({ name, label, defaultValue }: RatingInputProps) {
   return (
     <fieldset>
-      <legend className="text-sm font-medium text-stone-300">{label}</legend>
+      <legend className="label">{label}</legend>
       <div className="mt-1.5 flex items-center gap-2" role="radiogroup" aria-label={label}>
         {SCALE.map((value) => (
           <label
             key={value}
-            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-stone-700 text-sm text-stone-300 transition hover:border-stone-600 has-checked:border-amber-600 has-checked:bg-amber-700 has-checked:text-white"
+            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-line-strong bg-white/[0.03] text-sm tabular-nums text-stone-300 transition hover:border-stone-500 active:scale-95 has-checked:border-amber-500 has-checked:bg-linear-to-b has-checked:from-amber-500 has-checked:to-amber-700 has-checked:font-semibold has-checked:text-white has-checked:shadow-lg has-checked:shadow-amber-900/40"
           >
             <input
               type="radio"

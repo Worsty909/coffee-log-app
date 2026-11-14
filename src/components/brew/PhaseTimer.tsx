@@ -1,7 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { formatSeconds } from "@/lib/format";
+import {
+  getSoundSetting,
+  playCue,
+  primeCues,
+  setSoundSetting,
+  subscribeSoundSetting,
+} from "@/lib/cue";
+import { SoundOffIcon, SoundOnIcon } from "@/components/ui/icons";
 
 export type TimerPhase = {
   label: string;
@@ -36,6 +44,12 @@ export function describePhase(phase: TimerPhase): string {
   return pressure ? `${pressure} · ${phase.durationSeconds} s` : `${phase.durationSeconds} s`;
 }
 
+// Rozměry kruhového ukazatele.
+const RING_SIZE = 224;
+const RING_STROKE = 10;
+const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
+const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
+
 /**
  * Časovač, který tě provede fázemi tlakového profilu.
  *
@@ -51,6 +65,8 @@ export function PhaseTimer({ phases, onStop }: PhaseTimerProps) {
   // jedničky každou sekundu — prohlížeč na pozadí nebo při zhasnutém
   // displeji intervaly brzdí a časovač by se tiše zpožďoval.
   const startedAtRef = useRef<number | null>(null);
+
+  const soundEnabled = useSyncExternalStore(subscribeSoundSetting, getSoundSetting, () => true);
 
   const readElapsed = () =>
     startedAtRef.current === null ? 0 : Math.floor((Date.now() - startedAtRef.current) / 1000);
@@ -103,17 +119,22 @@ export function PhaseTimer({ phases, onStop }: PhaseTimerProps) {
   const activeIndex = boundaries.findIndex((end) => elapsed < end);
   // Když přeteče plán, zůstáváme vizuálně v poslední fázi.
   const currentIndex = activeIndex === -1 ? phases.length - 1 : activeIndex;
+  const reachedPlan = plannedTotal > 0 && elapsed >= plannedTotal;
   const overtime = elapsed > plannedTotal;
 
-  // Krátké zavibrování při přechodu do další fáze — při páčení se
-  // člověk dívá na manometr, ne na telefon.
+  // Signál při přechodu do další fáze a při dosažení plánu — při páčení
+  // se člověk dívá na manometr, ne na telefon. Zvuk + vibrace (viz
+  // lib/cue.ts) a k tomu probliknutí karty.
   useEffect(() => {
-    if (running && currentIndex > 0 && "vibrate" in navigator) {
-      navigator.vibrate(150);
-    }
+    if (running && currentIndex > 0) playCue("phase");
   }, [running, currentIndex]);
 
+  useEffect(() => {
+    if (running && reachedPlan) playCue("done");
+  }, [running, reachedPlan]);
+
   function handleStart() {
+    primeCues(); // zvuk se smí odemknout jen přímo z ťuknutí
     startedAtRef.current = Date.now();
     setElapsed(0);
     setRunning(true);
@@ -135,41 +156,116 @@ export function PhaseTimer({ phases, onStop }: PhaseTimerProps) {
   const current = phases[currentIndex];
   const phaseStart = currentIndex === 0 ? 0 : boundaries[currentIndex - 1];
   const phaseElapsed = Math.max(0, elapsed - phaseStart);
+  const pressure = current ? formatPhasePressure(current) : null;
+
+  const progress = plannedTotal > 0 ? Math.min(1, elapsed / plannedTotal) : 0;
+  const center = RING_SIZE / 2;
 
   return (
-    <section className="rounded-xl border border-stone-800 bg-stone-900/60 p-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-sm font-semibold text-stone-200">Časovač</h2>
-        <p className="text-xs text-stone-500">plán {formatSeconds(plannedTotal)}</p>
+    <section className="card relative p-4">
+      {/* Probliknutí při změně fáze — nový `key` animaci spustí znovu. */}
+      {running && (currentIndex > 0 || reachedPlan) && (
+        <div
+          key={`${currentIndex}-${reachedPlan}`}
+          aria-hidden="true"
+          className="phase-flash pointer-events-none absolute inset-0 rounded-2xl border border-transparent"
+        />
+      )}
+
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="section-title">Časovač</h2>
+        <div className="flex items-center gap-3">
+          <p className="text-xs tabular-nums text-stone-500">plán {formatSeconds(plannedTotal)}</p>
+          <button
+            type="button"
+            onClick={() => {
+              setSoundSetting(!soundEnabled);
+              if (!soundEnabled) primeCues();
+            }}
+            aria-pressed={soundEnabled}
+            aria-label={soundEnabled ? "Vypnout zvuk při změně fáze" : "Zapnout zvuk při změně fáze"}
+            title="Pípnutí při změně fáze"
+            className={`-m-1.5 rounded-lg p-1.5 transition ${
+              soundEnabled ? "text-amber-400" : "text-stone-600"
+            }`}
+          >
+            {soundEnabled ? <SoundOnIcon className="h-5 w-5" /> : <SoundOffIcon className="h-5 w-5" />}
+          </button>
+        </div>
       </div>
 
-      <div className="mt-3 flex items-baseline gap-3">
-        <p
-          className={`font-mono text-4xl tabular-nums ${
-            overtime ? "text-amber-400" : "text-stone-100"
-          }`}
-        >
-          {formatSeconds(elapsed)}
-        </p>
-        {running && current && (
-          <div className="text-sm">
-            <p className="font-medium text-amber-300">{current.label}</p>
-            <p className="text-stone-400">
-              {formatPhasePressure(current) && `${formatPhasePressure(current)} · `}
-              {phaseElapsed}/{current.durationSeconds} s
+      {/* Kruh: celý obvod = plánovaný čas, dílky = fáze. */}
+      <div className="relative mx-auto mt-2" style={{ width: RING_SIZE, height: RING_SIZE }}>
+        <svg width={RING_SIZE} height={RING_SIZE} className="-rotate-90" aria-hidden="true">
+          <circle
+            cx={center}
+            cy={center}
+            r={RING_RADIUS}
+            fill="none"
+            strokeWidth={RING_STROKE}
+            className="stroke-white/[0.07]"
+          />
+          <circle
+            cx={center}
+            cy={center}
+            r={RING_RADIUS}
+            fill="none"
+            strokeWidth={RING_STROKE}
+            strokeLinecap="round"
+            strokeDasharray={RING_LENGTH}
+            strokeDashoffset={RING_LENGTH * (1 - progress)}
+            className={`${overtime ? "stroke-amber-300" : "stroke-amber-500"} ${
+              running ? "transition-[stroke-dashoffset] duration-1000 ease-linear" : ""
+            }`}
+            style={{ opacity: elapsed === 0 ? 0 : 1 }}
+          />
+          {/* Zářezy na hranicích fází. */}
+          {phases.length > 1 &&
+            boundaries.slice(0, -1).map((end, index) => {
+              const angle = (end / plannedTotal) * 2 * Math.PI;
+              const inner = RING_RADIUS - RING_STROKE / 2 - 1;
+              const outer = RING_RADIUS + RING_STROKE / 2 + 1;
+              return (
+                <line
+                  key={index}
+                  x1={center + inner * Math.cos(angle)}
+                  y1={center + inner * Math.sin(angle)}
+                  x2={center + outer * Math.cos(angle)}
+                  y2={center + outer * Math.sin(angle)}
+                  strokeWidth="3"
+                  className="stroke-surface"
+                />
+              );
+            })}
+        </svg>
+
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+          <p
+            role="timer"
+            className={`text-5xl font-semibold tracking-tight tabular-nums ${
+              overtime ? "text-amber-300" : "text-stone-50"
+            }`}
+          >
+            {formatSeconds(elapsed)}
+          </p>
+          {running && current ? (
+            <>
+              <p className="mt-1 text-sm font-medium text-amber-300">{current.label}</p>
+              <p className="text-xs tabular-nums text-stone-400">
+                {pressure && `${pressure} · `}
+                {phaseElapsed}/{current.durationSeconds} s
+              </p>
+            </>
+          ) : (
+            <p className="mt-1 max-w-36 text-xs text-stone-500">
+              {elapsed === 0 ? "Připraveno ke spuštění" : "Zastaveno — čas je v receptu"}
             </p>
-          </div>
-        )}
-        {!running && elapsed === 0 && (
-          <p className="text-sm text-stone-500">Připraveno ke spuštění</p>
-        )}
-        {!running && elapsed > 0 && (
-          <p className="text-sm text-stone-500">Zastaveno — čas se propsal do receptu</p>
-        )}
+          )}
+        </div>
       </div>
 
       {running && current?.note && (
-        <p className="mt-2 rounded-lg bg-stone-800/70 px-3 py-2 text-sm text-stone-300">
+        <p className="mt-3 rounded-xl bg-white/[0.05] px-3 py-2 text-center text-sm text-stone-300">
           {current.note}
         </p>
       )}
@@ -182,47 +278,37 @@ export function PhaseTimer({ phases, onStop }: PhaseTimerProps) {
           return (
             <li
               key={`${phase.label}-${index}`}
-              className={`flex items-center justify-between rounded-lg px-3 py-1.5 text-sm ${
+              className={`flex items-center justify-between rounded-lg px-3 py-1.5 text-sm transition-colors ${
                 active
-                  ? "bg-amber-900/30 text-amber-200"
+                  ? "bg-amber-500/15 font-medium text-amber-200"
                   : done
                     ? "text-stone-600"
                     : "text-stone-400"
               }`}
             >
               <span>{phase.label}</span>
-              <span className="tabular-nums">
-                {describePhase(phase)}
-              </span>
+              <span className="tabular-nums">{describePhase(phase)}</span>
             </li>
           );
         })}
       </ol>
 
-      <div className="mt-3 flex gap-2">
+      <div className="mt-4 flex gap-2">
         {!running ? (
-          <button
-            type="button"
-            onClick={handleStart}
-            className="rounded-lg bg-amber-700 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600"
-          >
+          <button type="button" onClick={handleStart} className="btn btn-primary flex-1 py-3 text-base">
             {elapsed === 0 ? "Start" : "Spustit znovu"}
           </button>
         ) : (
           <button
             type="button"
             onClick={handleStop}
-            className="rounded-lg bg-red-800 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+            className="btn flex-1 bg-red-700 py-3 text-base text-white hover:bg-red-600"
           >
             Stop
           </button>
         )}
         {!running && elapsed > 0 && (
-          <button
-            type="button"
-            onClick={handleReset}
-            className="rounded-lg border border-stone-700 px-4 py-2 text-sm text-stone-300 hover:bg-stone-800"
-          >
+          <button type="button" onClick={handleReset} className="btn btn-secondary py-3">
             Vynulovat
           </button>
         )}

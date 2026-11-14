@@ -209,7 +209,7 @@ export function BrewForm({
         <input type="hidden" name="beanId" value={initialBeanId} />
       ) : (
         <div>
-          <label htmlFor="beanId" className="block text-sm font-medium text-stone-300">
+          <label htmlFor="beanId" className="label">
             Zrnko
           </label>
           <select
@@ -217,7 +217,7 @@ export function BrewForm({
             name="beanId"
             required
             defaultValue=""
-            className="mt-1 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 outline-none focus:border-amber-600"
+            className="mt-1 input"
           >
             <option value="" disabled>
               Vyber zrnko…
@@ -236,16 +236,17 @@ export function BrewForm({
       <input type="hidden" name="ratio" value={values.ratio} />
 
       {/* Metoda — espresso je hlavní, filtr vedle. */}
-      <div className="flex flex-wrap gap-2">
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
         {methods.map((option) => (
           <button
             key={option.id}
             type="button"
             onClick={() => handleMethodChange(option.id)}
-            className={`rounded-full px-3 py-1.5 text-sm transition ${
+            aria-pressed={option.id === methodId}
+            className={`shrink-0 rounded-full border px-3.5 py-1.5 text-sm whitespace-nowrap transition active:scale-95 ${
               option.id === methodId
-                ? "bg-amber-700 font-medium text-white"
-                : "border border-stone-700 text-stone-400 hover:bg-stone-800"
+                ? "border-amber-500/60 bg-amber-500/15 font-medium text-amber-200"
+                : "border-line-strong text-stone-400 hover:bg-white/[0.05]"
             }`}
           >
             {option.name}
@@ -254,19 +255,19 @@ export function BrewForm({
       </div>
 
       {methodProfiles.length > 0 && (
-        <section className="rounded-xl border border-stone-800 bg-stone-900/60 p-4">
+        <section className="card p-4">
           <div className="flex items-baseline justify-between gap-2">
-            <h2 className="text-sm font-semibold text-stone-200">Recept</h2>
+            <h2 className="section-title">Recept</h2>
             <Link href="/profiles" className="text-xs text-amber-500 hover:underline">
               Spravovat recepty
             </Link>
           </div>
           <div className="mt-3 space-y-2">
             <label
-              className={`block cursor-pointer rounded-lg border p-3 transition ${
+              className={`block cursor-pointer rounded-xl border p-3 transition ${
                 profileId === null
-                  ? "border-amber-700 bg-amber-950/30"
-                  : "border-stone-800 hover:border-stone-700"
+                  ? "border-amber-500/50 bg-amber-500/10"
+                  : "border-line hover:border-line-strong"
               }`}
             >
               <input
@@ -288,10 +289,10 @@ export function BrewForm({
             {methodProfiles.map((option) => (
               <label
                 key={option.id}
-                className={`block cursor-pointer rounded-lg border p-3 transition ${
+                className={`block cursor-pointer rounded-xl border p-3 transition ${
                   option.id === profileId
-                    ? "border-amber-700 bg-amber-950/30"
-                    : "border-stone-800 hover:border-stone-700"
+                    ? "border-amber-500/50 bg-amber-500/10"
+                    : "border-line hover:border-line-strong"
                 }`}
               >
                 <input
@@ -316,7 +317,9 @@ export function BrewForm({
                     </span>
                   )}
                 </div>
-                {option.description && (
+                {/* Popis jen u vybraného receptu — jinak by seznam na mobilu
+                    zabral dvě obrazovky. */}
+                {option.id === profileId && option.description && (
                   <p className="mt-1 text-xs leading-relaxed text-stone-400">{option.description}</p>
                 )}
                 {option.id === profileId && option.phases.length > 0 && (
@@ -391,7 +394,9 @@ export function BrewForm({
               label="Cílový čas"
               value={manualTargetTime}
               onChange={setManualTargetTime}
+              duration
               placeholder="např. 2:30"
+              hint="mm:ss — čárka napíše dvojtečku"
             />
             <NumberField
               id="bloomSeconds"
@@ -399,6 +404,7 @@ export function BrewForm({
               label="Bloom"
               value={manualBloomTime}
               onChange={setManualBloomTime}
+              duration
               suffix="s"
               hint="0 = bez bloomu"
             />
@@ -423,14 +429,15 @@ export function BrewForm({
         label="Skutečný čas"
         value={actualTime}
         onChange={setActualTime}
+        duration
         placeholder="např. 32 nebo 2:45"
-        hint="Vyplní se sám po zastavení časovače, jde přepsat."
+        hint="Vyplní se sám po zastavení časovače, jde přepsat. Sekundy, nebo mm:ss — čárka na klávesnici napíše dvojtečku."
       />
 
       <RatingInput name="rating" label="Hodnocení šálku" defaultValue={prefill?.rating ?? null} />
 
       <div>
-        <label htmlFor="notes" className="block text-sm font-medium text-stone-300">
+        <label htmlFor="notes" className="label">
           Poznámky
         </label>
         <textarea
@@ -439,7 +446,7 @@ export function BrewForm({
           rows={3}
           defaultValue={prefill?.notes ?? ""}
           placeholder="Chuť, co příště zkusit…"
-          className="mt-1 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 outline-none focus:border-amber-600"
+          className="mt-1 input"
         />
       </div>
 
@@ -450,7 +457,7 @@ export function BrewForm({
         {settings.grinderName} · mletí {formatGrind(grind)}
       </p>
 
-      {state.error && <p className="text-sm text-red-400">{state.error}</p>}
+      {state.error && <p className="alert-error">{state.error}</p>}
 
       <SubmitButton label={submitLabel} />
     </form>
@@ -463,7 +470,7 @@ function SubmitButton({ label }: { label: string }) {
     <button
       type="submit"
       disabled={pending}
-      className="w-full rounded-lg bg-amber-700 px-4 py-3 text-sm font-medium text-white hover:bg-amber-600 disabled:opacity-50"
+      className="btn btn-primary w-full py-3 text-base"
     >
       {pending ? "Ukládám…" : label}
     </button>

@@ -40,9 +40,9 @@ export function GrindInput({
   const delta = compareTo ? describeGrindDelta(compareTo.setting, value) : null;
 
   return (
-    <section className="rounded-xl border border-stone-800 bg-stone-900/60 p-4">
+    <section className="card p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-sm font-semibold text-stone-200">Mletí</h2>
+        <h2 className="section-title">Mletí</h2>
         <p className="text-xs text-stone-500">{grinderName}</p>
       </div>
 
@@ -64,7 +64,7 @@ export function GrindInput({
                 autoComplete="off"
                 value={String(value[part.key])}
                 onChange={(event) => handlePartChange(part.key, event.target.value)}
-                className="mt-1 w-14 rounded-lg border border-stone-700 bg-stone-900 px-0 py-2 text-center text-lg tabular-nums text-stone-100 outline-none focus:border-amber-600"
+                className="input mt-1 w-14 px-0 text-center text-xl font-medium tabular-nums sm:text-xl"
               />
             </div>
             {index < PARTS.length - 1 && (
@@ -82,7 +82,7 @@ export function GrindInput({
             {compareTo.label}: <span className="text-stone-300">{formatGrind(compareTo.setting)}</span>
           </span>
           {delta ? (
-            <span className="rounded-full bg-stone-800 px-2 py-0.5 text-amber-300">{delta}</span>
+            <span className="chip">{delta}</span>
           ) : (
             <span className="text-stone-600">stejné jako teď</span>
           )}

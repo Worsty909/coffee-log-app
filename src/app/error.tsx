@@ -24,7 +24,7 @@ export default function ErrorPage({
       <button
         type="button"
         onClick={() => retry()}
-        className="mt-4 rounded-lg bg-amber-700 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600"
+        className="mt-4 btn btn-primary"
       >
         Zkusit znovu
       </button>
